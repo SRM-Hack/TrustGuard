@@ -7,6 +7,8 @@ import logging
 import os
 import tempfile
 import time
+import threading
+from collections import defaultdict
 from typing import Any
 
 import uvicorn
@@ -25,6 +27,7 @@ from utils.scorer import TrustScorer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("truthguard")
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100MB hard limit
 
 app = FastAPI(
     title="TruthGuard API",
@@ -51,6 +54,23 @@ module_status: dict[str, bool] = {
     "countermeasure": False,
     "scorer": False,
 }
+
+_request_counts: dict[str, list[float]] = defaultdict(list)
+_rate_lock = threading.Lock()
+
+
+def _check_rate_limit(endpoint: str, max_per_minute: int = 10) -> bool:
+    """Return True if request is allowed, False if rate limit exceeded."""
+    now = time.time()
+    with _rate_lock:
+        times = _request_counts[endpoint]
+        # Remove entries older than 60 seconds.
+        _request_counts[endpoint] = [t for t in times if now - t < 60]
+        if len(_request_counts[endpoint]) >= max_per_minute:
+            return False
+        _request_counts[endpoint].append(now)
+        return True
+
 
 text_det: TextDetector | None = None
 ai_text_det: AITextDetector | None = None
@@ -136,18 +156,25 @@ async def analyze_text(
     _ = background_tasks
     started = time.time()
     try:
+        if not _check_rate_limit("text", max_per_minute=15):
+            raise HTTPException(status_code=429, detail="Too many requests. Please wait a moment.")
         if not text_det or not ai_text_det or not fact_ver or not scorer or not counter:
             raise HTTPException(status_code=500, detail="Required text modules are unavailable.")
 
         # Auto-detect language unless explicitly provided by caller.
         if language == "auto":
             language = detect_language(text)
+        if len(text.strip()) < 30:
+            raise HTTPException(
+                status_code=400,
+                detail="Text too short for analysis. Please provide at least 30 characters.",
+            )
 
         # Run core text detection tasks.
         fake_result = text_det.classify_text(text)
         ai_result = ai_text_det.is_ai_generated(text)
         highlighted = text_det.highlight_suspicious_sentences(text)
-        fact_results = fact_ver.verify_claims(text)
+        fact_results = fact_ver.verify_claims(text) if len(text.strip()) > 100 else []
 
         all_results = {
             "text": {**fake_result, **ai_result},
@@ -187,13 +214,18 @@ async def analyze_image(
     started = time.time()
     temp_path: str | None = None
     try:
+        if not _check_rate_limit("image", max_per_minute=15):
+            raise HTTPException(status_code=429, detail="Too many requests. Please wait a moment.")
         if not image_det or not scorer or not counter:
             raise HTTPException(status_code=500, detail="Required image modules are unavailable.")
 
         extension = os.path.splitext(file.filename or "")[1] or ".jpg"
+        file_bytes = await file.read()
+        if len(file_bytes) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="File too large. Maximum size is 100MB.")
         with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as tmp:
             temp_path = tmp.name
-            tmp.write(await file.read())
+            tmp.write(file_bytes)
 
         deepfake_result = image_det.detect_deepfake(temp_path)
         metadata_result = image_det.analyze_image_metadata(temp_path)
@@ -236,16 +268,21 @@ async def analyze_audio(
     started = time.time()
     temp_path: str | None = None
     try:
+        if not _check_rate_limit("audio", max_per_minute=15):
+            raise HTTPException(status_code=429, detail="Too many requests. Please wait a moment.")
         if not audio_det or not fact_ver or not scorer or not counter:
             raise HTTPException(status_code=500, detail="Required audio modules are unavailable.")
 
         extension = os.path.splitext(file.filename or "")[1].lower()
-        if extension not in {".wav", ".mp3", ".m4a"}:
+        if extension not in {".wav", ".mp3", ".m4a", ".ogg"}:
             raise HTTPException(status_code=400, detail="Unsupported audio format.")
 
+        file_bytes = await file.read()
+        if len(file_bytes) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="File too large. Maximum size is 100MB.")
         with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as tmp:
             temp_path = tmp.name
-            tmp.write(await file.read())
+            tmp.write(file_bytes)
 
         audio_result = audio_det.analyze(temp_path)
         transcript = str(audio_result.get("transcript", "") or "")
@@ -291,6 +328,8 @@ async def analyze_video(
     started = time.time()
     temp_path: str | None = None
     try:
+        if not _check_rate_limit("video", max_per_minute=15):
+            raise HTTPException(status_code=429, detail="Too many requests. Please wait a moment.")
         if not video_det or not fact_ver or not scorer or not counter:
             raise HTTPException(status_code=500, detail="Required video modules are unavailable.")
 
@@ -298,9 +337,12 @@ async def analyze_video(
         if extension not in {".mp4", ".mov", ".avi"}:
             raise HTTPException(status_code=400, detail="Unsupported video format.")
 
+        file_bytes = await file.read()
+        if len(file_bytes) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="File too large. Maximum size is 100MB.")
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
             temp_path = tmp.name
-            tmp.write(await file.read())
+            tmp.write(file_bytes)
 
         video_result = video_det.analyze(temp_path)
         audio_analysis = video_result.get("audio_analysis") if isinstance(video_result, dict) else None

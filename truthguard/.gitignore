@@ -1,0 +1,10 @@
+.env
+models/
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
+truthguard_env/
+*.egg-info/
+dist/
+build/

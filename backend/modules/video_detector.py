@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import os
 import subprocess
 import tempfile
@@ -148,13 +149,17 @@ class VideoDetector:
         try:
             frame_paths = self.extract_frames(video_path)
             audio_path = self.extract_audio_track(video_path)
+            audio_det_analyze = lambda p: self.audio_det.analyze(p)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                future_frames = executor.submit(self.analyze_frames, frame_paths)
+                future_audio = (
+                    executor.submit(audio_det_analyze, audio_path) if audio_path else None
+                )
 
-            frame_analysis = self.analyze_frames(frame_paths)
+                frame_analysis = future_frames.result()
+                audio_analysis = future_audio.result() if future_audio else None
             avg_frame_prob = float(frame_analysis.get("avg_deepfake_probability", 0.0))
-
-            audio_analysis: dict[str, Any] | None = None
-            if audio_path:
-                audio_analysis = self.audio_det.analyze(audio_path)
+            if audio_analysis is not None:
                 audio_voice_clone_score = float(
                     audio_analysis.get("voice_clone_score", 50.0)
                 )
@@ -209,3 +214,8 @@ class VideoDetector:
                         os.unlink(frame_path)
                 except Exception:
                     pass
+            try:
+                if audio_path and os.path.exists(audio_path):
+                    os.unlink(audio_path)
+            except Exception:
+                pass

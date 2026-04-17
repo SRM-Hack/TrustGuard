@@ -9,7 +9,7 @@ const navItems = [
   { to: "/analyze/video", label: "Video Analysis", icon: "🎬" },
 ];
 
-function Navbar() {
+function Navbar({ apiStatus = "checking" }) {
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
 
@@ -21,11 +21,11 @@ function Navbar() {
       end
       className={({ isActive }) =>
         [
-          "inline-flex items-center gap-2 text-sm font-medium transition-colors",
-          mobile ? "w-full rounded-lg px-3 py-2" : "h-16 px-2",
+          "inline-flex items-center gap-2 text-sm font-medium transition-colors duration-150",
+          mobile ? "w-full rounded-lg px-4 py-3" : "h-16 px-2 rounded-t-md",
           isActive
-            ? "text-blue-600 border-b-2 border-blue-600"
-            : "text-gray-600 hover:text-blue-600 border-b-2 border-transparent",
+            ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50"
+            : "text-gray-600 hover:text-blue-600 hover:bg-gray-50 border-b-2 border-transparent rounded-t-md",
         ].join(" ")
       }
     >
@@ -35,7 +35,15 @@ function Navbar() {
   );
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-gray-200 bg-white shadow-sm">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-white/60 bg-white/65 backdrop-blur-xl shadow-[0_10px_30px_rgba(17,24,39,0.10)]">
+      {isOpen && (
+        <button
+          type="button"
+          aria-label="Close menu backdrop"
+          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 z-40 bg-black/20"
+        />
+      )}
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <NavLink to="/" className="flex items-center gap-3">
           <svg
@@ -49,9 +57,23 @@ function Navbar() {
             />
           </svg>
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-gray-900">TruthGuard</span>
-            <span className="rounded-md bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+            <span className="font-display text-lg font-bold bg-gradient-to-r from-gray-900 to-blue-700 bg-clip-text text-transparent">
+              TruthGuard
+            </span>
+            <span className="rounded-md bg-blue-600/10 px-2 py-0.5 text-xs font-semibold text-blue-700">
               AI
+            </span>
+            <span className="ml-1 inline-flex items-center gap-1 text-xs text-gray-400">
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  apiStatus === "online"
+                    ? "bg-green-500 animate-pulse"
+                    : apiStatus === "offline"
+                      ? "bg-red-500"
+                      : "bg-gray-400"
+                }`}
+              />
+              API
             </span>
           </div>
         </NavLink>
@@ -65,11 +87,14 @@ function Navbar() {
             <>
               <NavLink
                 to="/dashboard"
-                className="text-xs font-medium text-gray-500 hover:text-blue-600"
+                className="hidden md:flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-blue-600 px-2 py-1 rounded-lg hover:bg-gray-50 transition"
               >
                 Dashboard
               </NavLink>
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+              <span
+                className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700"
+                title={user?.email}
+              >
                 {user?.name || "Analyst"}
               </span>
               <button
@@ -77,7 +102,7 @@ function Navbar() {
                 onClick={logout}
                 className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
               >
-                Logout
+                → Logout
               </button>
             </>
           ) : (
@@ -100,7 +125,7 @@ function Navbar() {
 
         <button
           type="button"
-          className="inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-600 hover:bg-gray-50 md:hidden"
+          className="inline-flex items-center justify-center rounded-lg border border-white/60 bg-white/60 p-2 text-gray-700 hover:bg-white/90 md:hidden"
           onClick={() => setIsOpen((prev) => !prev)}
           aria-label="Toggle menu"
         >
@@ -129,7 +154,7 @@ function Navbar() {
       </div>
 
       {isOpen && (
-        <div className="border-t border-gray-200 bg-white px-4 py-3 md:hidden">
+        <div className="relative z-50 border border-white/60 shadow-lg border-t border-white/60 bg-white/80 backdrop-blur-xl px-4 py-3 md:hidden">
           <nav className="flex flex-col gap-1">
             {navItems.map((item) => renderLink(item, true))}
           </nav>
@@ -151,7 +176,7 @@ function Navbar() {
                   }}
                   className="text-left text-xs font-semibold text-gray-700"
                 >
-                  Logout
+                  → Logout
                 </button>
               </>
             ) : (
@@ -175,6 +200,7 @@ function Navbar() {
           </div>
         </div>
       )}
+      <div className="h-[2px] w-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600" />
     </header>
   );
 }

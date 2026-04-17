@@ -54,100 +54,130 @@ function SignupPage() {
   };
 
   return (
-    <section className="mx-auto max-w-lg rounded-2xl bg-white p-8 shadow-sm">
-      <h1 className="text-2xl font-semibold text-gray-900">Create Your Account</h1>
-      <p className="mt-1 text-sm text-gray-600">
-        Join TruthGuard to manage and review misinformation analysis workflows.
-      </p>
-
-      <form onSubmit={onSubmit} className="mt-6 grid gap-4">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Full Name
-          </label>
-          <input
-            id="name"
-            value={formData.name}
-            onChange={(e) => updateField("name", e.target.value)}
-            placeholder="Your name"
-            className="mt-1 w-full rounded-xl border-gray-300 focus:border-blue-600 focus:ring-blue-600"
-          />
-          {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
-        </div>
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Work Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => updateField("email", e.target.value)}
-            placeholder="name@company.com"
-            className="mt-1 w-full rounded-xl border-gray-300 focus:border-blue-600 focus:ring-blue-600"
-          />
-          {errors.email && (
-            <p className="mt-1 text-xs text-red-600">{errors.email}</p>
-          )}
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={(e) => updateField("password", e.target.value)}
-              placeholder="Create password"
-              className="mt-1 w-full rounded-xl border-gray-300 focus:border-blue-600 focus:ring-blue-600"
-            />
-            {errors.password && (
-              <p className="mt-1 text-xs text-red-600">{errors.password}</p>
-            )}
-          </div>
-          <div>
-            <label
-              htmlFor="confirm-password"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Confirm
-            </label>
-            <input
-              id="confirm-password"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={(e) => updateField("confirmPassword", e.target.value)}
-              placeholder="Repeat password"
-              className="mt-1 w-full rounded-xl border-gray-300 focus:border-blue-600 focus:ring-blue-600"
-            />
-            {errors.confirmPassword && (
-              <p className="mt-1 text-xs text-red-600">
-                {errors.confirmPassword}
-              </p>
-            )}
+    <section className="min-h-[80vh] flex items-center justify-center">
+      <div className="grid w-full max-w-4xl mx-auto overflow-hidden rounded-2xl border border-gray-100 shadow-md lg:grid-cols-2">
+        <div className="hidden w-full rounded-2xl bg-gradient-to-br from-slate-900 to-blue-950 p-10 text-white lg:block">
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="h-16 w-16 text-blue-400"
+            aria-hidden="true"
+          >
+            <path d="M12 2.4 4 5.9v6.5c0 5.4 3.4 9.9 8 11.2 4.6-1.3 8-5.8 8-11.2V5.9L12 2.4Z" />
+          </svg>
+          <h2 className="mt-5 font-display text-3xl font-bold text-white">TruthGuard</h2>
+          <p className="mt-3 text-sm text-blue-200/80">
+            AI-powered multimodal misinformation detection and counter-response
+            platform
+          </p>
+          <div className="mt-6 space-y-2 text-sm text-blue-200">
+            <p className="flex items-center gap-2">✓ Text, Image, Audio &amp; Video analysis</p>
+            <p className="flex items-center gap-2">✓ Hindi, Telugu &amp; English support</p>
+            <p className="flex items-center gap-2">✓ Explainable AI verdicts</p>
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="mt-1 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-        >
-          {isSubmitting ? "Creating account..." : "Create Account"}
-        </button>
-      </form>
+        <div className="w-full rounded-2xl bg-white p-8 shadow-sm sm:p-10 lg:w-1/2">
+          <h1 className="font-display text-2xl font-bold text-gray-900">
+            Create your account
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Join TruthGuard - free access to all analysis tools
+          </p>
 
-      <p className="mt-4 text-center text-sm text-gray-600">
-        Already have an account?{" "}
-        <Link to="/login" className="font-semibold text-blue-700 hover:text-blue-800">
-          Login
-        </Link>
-      </p>
+          <form onSubmit={onSubmit} className="mt-6 grid gap-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                Name
+              </label>
+              <input
+                id="name"
+                value={formData.name}
+                onChange={(e) => updateField("name", e.target.value)}
+                placeholder="Your name"
+                className="input-base mt-1"
+              />
+              {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
+            </div>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => updateField("email", e.target.value)}
+                placeholder="name@company.com"
+                className="input-base mt-1"
+              />
+              {errors.email && (
+                <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+              )}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => updateField("password", e.target.value)}
+                  placeholder="Create password"
+                  className="input-base mt-1"
+                />
+                {errors.password && (
+                  <p className="mt-1 text-xs text-red-600">{errors.password}</p>
+                )}
+              </div>
+              <div>
+                <label
+                  htmlFor="confirm-password"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Confirm password
+                </label>
+                <input
+                  id="confirm-password"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => updateField("confirmPassword", e.target.value)}
+                  placeholder="Repeat password"
+                  className="input-base mt-1"
+                />
+                {errors.confirmPassword && (
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.confirmPassword}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <button type="submit" disabled={isSubmitting} className="btn-primary mt-1 w-full justify-center">
+              {isSubmitting ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Creating account...
+                </>
+              ) : (
+                "Create account →"
+              )}
+            </button>
+          </form>
+
+          <p className="mt-4 text-sm text-gray-600">
+            Already have an account?{" "}
+            <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-700">
+              Sign in →
+            </Link>
+          </p>
+        </div>
+      </div>
     </section>
   );
 }

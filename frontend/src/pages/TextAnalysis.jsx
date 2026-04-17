@@ -1,12 +1,15 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import AlternativeSources from "../components/AlternativeSources";
 import DetectionResults from "../components/DetectionResults";
+import ErrorBoundary from "../components/ErrorBoundary";
 import ExplanationPanel from "../components/ExplanationPanel";
 import FileUpload from "../components/FileUpload";
 import LanguageSelector from "../components/LanguageSelector";
+import LoadingOverlay from "../components/LoadingOverlay";
 import TrustScoreGauge from "../components/TrustScoreGauge";
 import { analyzeText } from "../api/truthguard";
+import { SAMPLE_TEXTS } from "../constants";
 import {
   getVerdictPresentation,
   normalizeAnalysisResults,
@@ -24,6 +27,7 @@ function TextAnalysis() {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState("");
+  const resultsRef = useRef(null);
 
   const activeText = textInput.trim();
   const verdictStyle = useMemo(
@@ -55,6 +59,10 @@ function TextAnalysis() {
       const payload = await analyzeText(activeText, selectedLanguage);
       const normalized = normalizeAnalysisResults(payload);
       setResults(normalized);
+      setTimeout(
+        () => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        100
+      );
       saveAnalysisToSession({
         id: `${Date.now()}-text`,
         time: new Date().toISOString(),
@@ -73,6 +81,30 @@ function TextAnalysis() {
       setIsLoading(false);
     }
   };
+
+  const onCopySummary = async () => {
+    if (!results) return;
+    const summary = `TruthGuard Analysis Result
+Trust Score: ${results?.trust_score ?? 0}/100
+Verdict: ${results?.verdict ?? "SUSPICIOUS"}
+Flags: ${results?.flags?.join(", ") || "None"}`;
+
+    try {
+      await navigator.clipboard.writeText(summary);
+      toast.success("Summary copied to clipboard!");
+    } catch (err) {
+      toast.error("Unable to copy summary.");
+    }
+  };
+
+  const onNewAnalysis = () => {
+    setResults(null);
+    setTextInput("");
+    setError("");
+    setTextFile(null);
+  };
+
+  const wordCount = textInput.trim().split(/\s+/).filter(Boolean).length;
 
   return (
     <div className="space-y-6">
@@ -104,6 +136,36 @@ function TextAnalysis() {
             placeholder="Enter text to analyze..."
             className="w-full rounded-xl border-gray-300 focus:border-truthguard-blue focus:ring-truthguard-blue"
           />
+          <p className="mt-2 text-right text-xs text-gray-400">
+            {textInput.length} characters · {wordCount} words
+          </p>
+        </div>
+
+        <div className="mt-3">
+          <p className="text-xs font-medium text-gray-500">Try a sample:</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setTextInput(SAMPLE_TEXTS.en)}
+              className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-600 transition hover:border-blue-300 hover:text-blue-600"
+            >
+              🇬🇧 English Fake News
+            </button>
+            <button
+              type="button"
+              onClick={() => setTextInput(SAMPLE_TEXTS.hi)}
+              className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-600 transition hover:border-blue-300 hover:text-blue-600"
+            >
+              🇮🇳 Hindi WhatsApp Forward
+            </button>
+            <button
+              type="button"
+              onClick={() => setTextInput(SAMPLE_TEXTS.te)}
+              className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-600 transition hover:border-blue-300 hover:text-blue-600"
+            >
+              🇮🇳 Telugu Alert
+            </button>
+          </div>
         </div>
 
         <div className="mt-4">
@@ -126,34 +188,64 @@ function TextAnalysis() {
           type="button"
           onClick={onAnalyze}
           disabled={isLoading || !activeText}
-          className="mt-5 inline-flex items-center rounded-lg bg-truthguard-blue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+          className="btn-primary mt-5"
         >
           {isLoading ? "Analyzing..." : "Analyze Text →"}
         </button>
+        {(textInput || results) && (
+          <button type="button" onClick={onNewAnalysis} className="btn-secondary ml-3 mt-5">
+            Clear
+          </button>
+        )}
 
         {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
       </section>
 
       {(results || isLoading) && (
-        <section className="space-y-6">
-          <TrustScoreGauge
-            score={results?.trust_score ?? 0}
-            verdict={results?.verdict ?? "SUSPICIOUS"}
-            verdictColor={verdictStyle.color}
-            verdictEmoji={verdictStyle.emoji}
-            flags={results?.flags ?? []}
-            isLoading={isLoading}
-          />
-          <DetectionResults detection={results?.detection ?? {}} modality="text" />
-          <ExplanationPanel
-            countermeasure={results?.countermeasure}
-            language={results?.language ?? selectedLanguage}
-            isLoading={isLoading}
-          />
-          <AlternativeSources
-            sources={results?.alternative_sources ?? []}
-            isLoading={isLoading}
-          />
+        <section ref={resultsRef} className="space-y-4">
+          {results && (
+            <div className="flex flex-wrap gap-3">
+              <button type="button" onClick={onCopySummary} className="btn-secondary">
+                📋 Copy Summary
+              </button>
+              <button type="button" onClick={onNewAnalysis} className="btn-secondary">
+                ↩ New Analysis
+              </button>
+            </div>
+          )}
+
+          <div className="relative">
+            <LoadingOverlay isLoading={isLoading} />
+            <ErrorBoundary>
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+                <div className="space-y-6 xl:col-span-2">
+                  <TrustScoreGauge
+                    score={results?.trust_score ?? 0}
+                    verdict={results?.verdict ?? "SUSPICIOUS"}
+                    verdictColor={verdictStyle.color}
+                    verdictEmoji={verdictStyle.emoji}
+                    flags={results?.flags ?? []}
+                    isLoading={isLoading}
+                  />
+                  <DetectionResults
+                    detection={results?.detection ?? {}}
+                    modality="text"
+                  />
+                </div>
+                <div className="space-y-6 xl:col-span-3">
+                  <ExplanationPanel
+                    countermeasure={results?.countermeasure}
+                    language={results?.language ?? selectedLanguage}
+                    isLoading={isLoading}
+                  />
+                  <AlternativeSources
+                    sources={results?.alternative_sources ?? []}
+                    isLoading={isLoading}
+                  />
+                </div>
+              </div>
+            </ErrorBoundary>
+          </div>
         </section>
       )}
     </div>

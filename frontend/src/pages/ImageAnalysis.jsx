@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import AlternativeSources from "../components/AlternativeSources";
 import DetectionResults from "../components/DetectionResults";
+import ErrorBoundary from "../components/ErrorBoundary";
 import ExplanationPanel from "../components/ExplanationPanel";
 import FileUpload from "../components/FileUpload";
+import LoadingOverlay from "../components/LoadingOverlay";
 import TrustScoreGauge from "../components/TrustScoreGauge";
 import { analyzeImage } from "../api/truthguard";
 import {
@@ -18,6 +20,7 @@ function ImageAnalysis() {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState("");
+  const resultsRef = useRef(null);
 
   useEffect(() => {
     if (!selectedFile) {
@@ -46,6 +49,10 @@ function ImageAnalysis() {
       const payload = await analyzeImage(selectedFile);
       const normalized = normalizeAnalysisResults(payload);
       setResults(normalized);
+      setTimeout(
+        () => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        100
+      );
       saveAnalysisToSession({
         id: `${Date.now()}-image`,
         time: new Date().toISOString(),
@@ -63,6 +70,27 @@ function ImageAnalysis() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleShareResults = async () => {
+    if (!results) return;
+    const summary = `TruthGuard Analysis Result
+Modality: image
+Trust Score: ${results?.trust_score ?? 0}/100
+Verdict: ${results?.verdict ?? "SUSPICIOUS"}`;
+    try {
+      await navigator.clipboard.writeText(summary);
+      toast.success("Copied!");
+    } catch (err) {
+      toast.error("Unable to copy.");
+    }
+  };
+
+  const handleNewAnalysis = () => {
+    setResults(null);
+    setSelectedFile(null);
+    setError("");
+    setPreviewUrl(null);
   };
 
   return (
@@ -84,6 +112,11 @@ function ImageAnalysis() {
             label="Upload Image"
             icon="🖼️"
           />
+        </div>
+
+        <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-700">
+          🔬 TruthGuard uses a 2-model ViT ensemble to detect deepfakes. Results
+          are averaged for higher accuracy.
         </div>
 
         {previewUrl && (
@@ -109,25 +142,50 @@ function ImageAnalysis() {
       </section>
 
       {(results || isLoading) && (
-        <section className="space-y-6">
-          <TrustScoreGauge
-            score={results?.trust_score ?? 0}
-            verdict={results?.verdict ?? "SUSPICIOUS"}
-            verdictColor={verdictStyle.color}
-            verdictEmoji={verdictStyle.emoji}
-            flags={results?.flags ?? []}
-            isLoading={isLoading}
-          />
-          <DetectionResults detection={results?.detection ?? {}} modality="image" />
-          <ExplanationPanel
-            countermeasure={results?.countermeasure}
-            language={results?.language ?? "en"}
-            isLoading={isLoading}
-          />
-          <AlternativeSources
-            sources={results?.alternative_sources ?? []}
-            isLoading={isLoading}
-          />
+        <section ref={resultsRef} className="space-y-4">
+          {results && (
+            <div className="mt-2 flex flex-wrap gap-3">
+              <button onClick={handleShareResults} className="btn-secondary" type="button">
+                📋 Copy Summary
+              </button>
+              <button onClick={handleNewAnalysis} className="btn-secondary" type="button">
+                ↩ New Analysis
+              </button>
+            </div>
+          )}
+
+          <div className="relative">
+            <LoadingOverlay isLoading={isLoading} />
+            <ErrorBoundary>
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+                <div className="space-y-6 xl:col-span-2">
+                  <TrustScoreGauge
+                    score={results?.trust_score ?? 0}
+                    verdict={results?.verdict ?? "SUSPICIOUS"}
+                    verdictColor={verdictStyle.color}
+                    verdictEmoji={verdictStyle.emoji}
+                    flags={results?.flags ?? []}
+                    isLoading={isLoading}
+                  />
+                  <DetectionResults
+                    detection={results?.detection ?? {}}
+                    modality="image"
+                  />
+                </div>
+                <div className="space-y-6 xl:col-span-3">
+                  <ExplanationPanel
+                    countermeasure={results?.countermeasure}
+                    language={results?.language ?? "en"}
+                    isLoading={isLoading}
+                  />
+                  <AlternativeSources
+                    sources={results?.alternative_sources ?? []}
+                    isLoading={isLoading}
+                  />
+                </div>
+              </div>
+            </ErrorBoundary>
+          </div>
         </section>
       )}
     </div>

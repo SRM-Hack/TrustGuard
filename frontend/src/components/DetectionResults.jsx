@@ -44,12 +44,30 @@ function AccordionItem({ id, icon, title, children, isOpen, onToggle }) {
       <button
         type="button"
         onClick={() => onToggle(id)}
-        className="flex w-full items-center justify-between bg-gray-50 px-4 py-3 text-left"
+        className={`flex w-full items-center justify-between px-4 py-3 text-left transition-colors ${
+          isOpen
+            ? "bg-gray-50 text-gray-900 font-semibold"
+            : "text-gray-700 hover:bg-gray-50"
+        }`}
       >
-        <span className="font-semibold text-gray-900">
+        <span className="font-semibold">
           {icon} {title}
         </span>
-        <span className="text-lg text-gray-500">{isOpen ? "▾" : "▸"}</span>
+        <svg
+          className={`h-4 w-4 text-gray-500 transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
       </button>
       <div
         className={`grid transition-all duration-300 ${
@@ -74,12 +92,23 @@ function DetectionResults({ detection = {}, modality = "text" }) {
   if (detection?.video) panels.push("video");
   if (detection?.fact_check) panels.push("fact_check");
 
+  const [allOpen, setAllOpen] = useState(true);
   const [openPanels, setOpenPanels] = useState(() =>
     panels.reduce((acc, panel) => ({ ...acc, [panel]: true }), {})
   );
 
   const togglePanel = (panel) => {
     setOpenPanels((prev) => ({ ...prev, [panel]: !prev[panel] }));
+  };
+
+  const toggleAll = () => {
+    if (allOpen) {
+      setOpenPanels(panels.reduce((acc, panel) => ({ ...acc, [panel]: false }), {}));
+      setAllOpen(false);
+    } else {
+      setOpenPanels(panels.reduce((acc, panel) => ({ ...acc, [panel]: true }), {}));
+      setAllOpen(true);
+    }
   };
 
   const text = detection?.text || {};
@@ -90,11 +119,13 @@ function DetectionResults({ detection = {}, modality = "text" }) {
 
   return (
     <section className="rounded-xl bg-white p-6 shadow-sm">
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">Detection Results</h2>
-        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold uppercase text-blue-700">
-          {modality}
-        </span>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+          Detection Results
+        </h2>
+        <button onClick={toggleAll} className="text-xs text-blue-600 hover:underline" type="button">
+          {allOpen ? "Collapse all" : "Expand all"}
+        </button>
       </div>
 
       <div className="space-y-3">
@@ -243,6 +274,11 @@ function DetectionResults({ detection = {}, modality = "text" }) {
                         ? "bg-red-100 text-red-700"
                         : "bg-gray-100 text-gray-700";
                   const links = item.evidence_links || item.links || [];
+                  const isBad =
+                    label === "FALSE" ||
+                    String(item.rating || "")
+                      .toLowerCase()
+                      .includes("mislead");
 
                   return (
                     <div
@@ -250,6 +286,9 @@ function DetectionResults({ detection = {}, modality = "text" }) {
                       className="rounded-lg border border-gray-200 p-3"
                     >
                       <p className="font-medium text-gray-900">
+                        {isBad && (
+                          <span className="mr-2 inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                        )}
                         {item.claim || "Claim unavailable"}
                       </p>
                       <div className="mt-2">

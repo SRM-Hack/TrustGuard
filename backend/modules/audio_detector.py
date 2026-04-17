@@ -204,3 +204,13 @@ class AudioDetector:
                 },
                 "processing_note": processing_note,
             }
+        finally:
+            # Clean up the preprocessed file if it's different from the original.
+            if processed_path != audio_path:
+                try:
+                    import os
+
+                    if os.path.exists(processed_path):
+                        os.unlink(processed_path)
+                except Exception:
+                    pass

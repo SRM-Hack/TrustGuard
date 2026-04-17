@@ -199,7 +199,7 @@ function AudioAnalysis() {
           <div className="space-y-6 pt-4">
             <FileUpload
               accept="audio/wav,audio/mp3,audio/mpeg,audio/m4a,audio/ogg"
-              onFileSelect={setSelectedFile}
+              onFileSelected={setSelectedFile}
               selectedFile={selectedFile}
             />
 

@@ -187,7 +187,7 @@ function VideoAnalysis() {
             <div className="space-y-6">
               <FileUpload
                 accept="video/mp4,video/quicktime,video/avi"
-                onFileSelect={setSelectedFile}
+                onFileSelected={setSelectedFile}
                 selectedFile={selectedFile}
               />
 

@@ -28,13 +28,16 @@ function FileUpload({
   accept = "",
   maxSizeMB = 50,
   onFileSelected,
+  selectedFile: externalFile = null,
   label = "Upload file",
   icon = "📁",
 }) {
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [internalFile, setInternalFile] = useState(null);
   const [inlineError, setInlineError] = useState("");
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   const acceptedFormatsText = useMemo(() => acceptDescription(accept), [accept]);
+
+  const selectedFile = externalFile || internalFile;
 
   const onDrop = (acceptedFiles, rejectedFiles) => {
     if (rejectedFiles.length > 0) {
@@ -53,12 +56,12 @@ function FileUpload({
     if (!file) return;
 
     setInlineError("");
-    setSelectedFile(file);
+    setInternalFile(file);
     onFileSelected?.(file);
   };
 
   const clearFile = () => {
-    setSelectedFile(null);
+    setInternalFile(null);
     setInlineError("");
     onFileSelected?.(null);
   };

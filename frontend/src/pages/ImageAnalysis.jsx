@@ -176,7 +176,7 @@ function ImageAnalysis() {
             <div className="space-y-6">
               <FileUpload
                 accept="image/jpeg,image/png,image/webp,image/gif"
-                onFileSelect={setSelectedFile}
+                onFileSelected={setSelectedFile}
                 selectedFile={selectedFile}
               />
 

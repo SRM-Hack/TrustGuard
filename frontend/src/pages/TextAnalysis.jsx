@@ -212,7 +212,7 @@ function TextAnalysis() {
         <div className="mt-6">
           <FileUpload
             accept=".txt,.doc,.docx,.pdf"
-            onFileSelect={onTextFileSelected}
+            onFileSelected={onTextFileSelected}
             selectedFile={textFile}
           />
         </div>

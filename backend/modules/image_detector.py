@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import os
 import tempfile
 import time
 from typing import Any
@@ -141,10 +142,15 @@ class ImageDetector:
                         "Unusually large aspect ratio detected for this image."
                     )
 
-                if image_format.upper() == "JPEG":
-                    suspicious_metadata.append(
-                        "JPEG format may contain compression artifacts that hide edits."
-                    )
+                # Flag JPEG only when there are signs of very heavy recompression.
+                estimated_pixels = width * height
+                file_size_bytes = os.path.getsize(image_path)
+                if image_format.upper() == "JPEG" and estimated_pixels > 0:
+                    bytes_per_pixel = file_size_bytes / estimated_pixels
+                    if bytes_per_pixel < 0.05:
+                        suspicious_metadata.append(
+                            "Heavy JPEG re-compression detected - possible editing to hide artifacts."
+                        )
 
                 return {
                     "format": image_format,

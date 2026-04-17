@@ -11,6 +11,8 @@ import SuspiciousSentences from "../components/SuspiciousSentences";
 import TrustScoreGauge from "../components/TrustScoreGauge";
 import { analyzeText } from "../api/truthguard";
 import { SAMPLE_TEXTS } from "../constants";
+import { useLanguage } from "../context/LanguageContext";
+import { analysisTranslations } from "../locales/translations";
 import {
   getVerdictPresentation,
   normalizeAnalysisResults,
@@ -23,6 +25,7 @@ async function readTextFile(file) {
 }
 
 function TextAnalysis() {
+  const { t, language } = useLanguage();
   const [textInput, setTextInput] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("auto");
   const [textFile, setTextFile] = useState(null);
@@ -43,22 +46,22 @@ function TextAnalysis() {
     try {
       const content = await readTextFile(file);
       setTextInput(content);
-      toast.success("Text file loaded.");
+      toast.success(t("fileLoaded", analysisTranslations) || "Text file loaded.");
     } catch (err) {
-      toast.error("Unable to read text file.");
+      toast.error(t("fileReadError", analysisTranslations) || "Unable to read text file.");
     }
   };
 
   const onAnalyze = async () => {
     if (!activeText) {
-      toast.error("Please enter or upload text to analyze.");
+      toast.error(t("enterTextError", analysisTranslations) || "Please enter or upload text to analyze.");
       return;
     }
 
     try {
       setIsLoading(true);
       setError("");
-      const payload = await analyzeText(activeText, selectedLanguage);
+      const payload = await analyzeText(activeText, selectedLanguage === "auto" ? language : selectedLanguage);
       const normalized = normalizeAnalysisResults(payload);
       setResults(normalized);
       setTimeout(
@@ -74,7 +77,7 @@ function TextAnalysis() {
         language: normalized.language,
         results: normalized,
       });
-      toast.success("Text analysis completed.");
+      toast.success(t("analysisSuccess", analysisTranslations) || "Text analysis completed.");
     } catch (err) {
       const message = err?.message || "Unable to analyze text right now.";
       setError(message);
@@ -97,9 +100,9 @@ function TextAnalysis() {
 
     try {
       await navigator.clipboard.writeText(summary);
-      toast.success("Analysis summary copied to clipboard!");
+      toast.success(t("summaryCopied", analysisTranslations) || "Analysis summary copied to clipboard!");
     } catch (err) {
-      toast.error("Unable to copy summary.");
+      toast.error(t("copyError", analysisTranslations) || "Unable to copy summary.");
     }
   };
 
@@ -115,9 +118,9 @@ function TextAnalysis() {
 
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toast.success("Share link copied to clipboard!");
+      toast.success(t("linkCopied", analysisTranslations) || "Share link copied to clipboard!");
     } catch (err) {
-      toast.error("Unable to copy share link.");
+      toast.error(t("copyError", analysisTranslations) || "Unable to copy share link.");
     }
   };
 
@@ -133,7 +136,7 @@ function TextAnalysis() {
       explanation: results.countermeasure?.explanation,
       sources: results.alternative_sources,
     });
-    toast.success("Downloading analysis report...");
+    toast.success(t("downloadingReport", analysisTranslations) || "Downloading analysis report...");
   };
 
   const onNewAnalysis = () => {
@@ -149,11 +152,10 @@ function TextAnalysis() {
     <div className="space-y-6">
       <section className="trust-card p-6">
         <h2 className="text-2xl font-semibold text-gray-900">
-          📝 Text Misinformation Analysis
+          📝 {t("textTitle", analysisTranslations)}
         </h2>
         <p className="mt-1 text-sm text-gray-600">
-          Paste claims or upload text files for fake-news, AI-generated-text, and
-          fact-verification checks.
+          {t("textSub", analysisTranslations)}
         </p>
 
         <div className="mt-4">
@@ -165,23 +167,23 @@ function TextAnalysis() {
             htmlFor="claim-input"
             className="mb-2 block text-sm font-medium text-gray-700"
           >
-            Claim or Content
+            {t("claimInputLabel", analysisTranslations)}
           </label>
           <textarea
             id="claim-input"
             rows={8}
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
-            placeholder="Enter text to analyze..."
+            placeholder={t("placeholderText", analysisTranslations)}
             className="w-full rounded-xl border-gray-300 focus:border-truthguard-blue focus:ring-truthguard-blue"
           />
           <p className="mt-2 text-right text-xs text-gray-400">
-            {textInput.length} characters · {wordCount} words
+            {textInput.length} {t("characters", analysisTranslations)} · {wordCount} {t("words", analysisTranslations)}
           </p>
         </div>
 
         <div className="mt-3">
-          <p className="text-xs font-medium text-gray-500">Try a sample:</p>
+          <p className="text-xs font-medium text-gray-500">{t("sampleText", analysisTranslations)}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <button
               type="button"
@@ -202,103 +204,80 @@ function TextAnalysis() {
               onClick={() => setTextInput(SAMPLE_TEXTS.te)}
               className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-600 transition hover:border-blue-300 hover:text-blue-600"
             >
-              🇮🇳 Telugu Alert
+              🇮🇳 Telugu Misinformation
             </button>
           </div>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-6">
           <FileUpload
-            accept=".txt,.md,text/plain"
-            maxSizeMB={10}
-            onFileSelected={onTextFileSelected}
-            label="Upload Text File (Optional)"
-            icon="📄"
+            accept=".txt,.doc,.docx,.pdf"
+            onFileSelect={onTextFileSelected}
+            selectedFile={textFile}
           />
         </div>
 
-        {textFile && (
-          <p className="mt-2 text-xs text-gray-500">
-            Loaded from file: <span className="font-medium">{textFile.name}</span>
-          </p>
-        )}
-
-        <button
-          type="button"
-          onClick={onAnalyze}
-          disabled={isLoading || !activeText}
-          className="btn-primary mt-5"
-        >
-          {isLoading ? "Analyzing..." : "Analyze Text →"}
-        </button>
-        {(textInput || results) && (
-          <button type="button" onClick={onNewAnalysis} className="btn-secondary ml-3 mt-5">
-            Clear
+        <div className="mt-8 flex justify-end gap-4">
+          {results && (
+            <button
+              type="button"
+              onClick={onNewAnalysis}
+              className="btn-secondary"
+            >
+              {t("newAnalysis", analysisTranslations)}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onAnalyze}
+            disabled={isLoading || !activeText}
+            className="btn-primary min-w-[160px]"
+          >
+            {isLoading ? t("analyzingBtn", analysisTranslations) : t("analyzeBtn", analysisTranslations)}
           </button>
-        )}
-
-        {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+        </div>
       </section>
 
-      {(results || isLoading) && (
-        <section ref={resultsRef} className="space-y-4">
-          {results && (
-            <div className="flex flex-wrap gap-3">
-              <button type="button" onClick={onCopySummary} className="btn-secondary">
-                📋 Copy Summary
-              </button>
-              <button type="button" onClick={onShareLink} className="btn-secondary">
-                🔗 Share Link
-              </button>
-              <button type="button" onClick={onDownloadReport} className="btn-secondary">
-                ⬇️ Download Report
-              </button>
-              <button type="button" onClick={onNewAnalysis} className="btn-secondary">
-                ↩ New Analysis
-              </button>
+      {results && (
+        <div ref={resultsRef} className="animate-fade-in-up space-y-6">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-1">
+              <TrustScoreGauge score={results.trust_score} verdict={results.verdict} />
             </div>
-          )}
-
-          <div className="relative">
-            <LoadingOverlay isLoading={isLoading} />
-            <ErrorBoundary>
-              <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
-                <div className="space-y-6 xl:col-span-2">
-                  <TrustScoreGauge
-                    score={results?.trust_score ?? 0}
-                    verdict={results?.verdict ?? "SUSPICIOUS"}
-                    verdictColor={verdictStyle.color}
-                    verdictEmoji={verdictStyle.emoji}
-                    flags={results?.flags ?? []}
-                    isLoading={isLoading}
-                  />
-                  <DetectionResults
-                    detection={results?.detection ?? {}}
-                    modality="text"
-                  />
-                  <SuspiciousSentences
-                    sentences={results?.detection?.suspicious_sentences ?? []}
-                    isLoading={isLoading}
-                  />
-                </div>
-                <div className="space-y-6 xl:col-span-3">
-                  <ExplanationPanel
-                    countermeasure={results?.countermeasure}
-                    language={results?.language ?? selectedLanguage}
-                    isLoading={isLoading}
-                  />
-                  <AlternativeSources
-                    sources={results?.alternative_sources ?? []}
-                    isLoading={isLoading}
-                  />
-                </div>
-              </div>
-            </ErrorBoundary>
+            <div className="lg:col-span-2">
+              <DetectionResults 
+                verdict={results.verdict} 
+                flags={results.flags}
+                onDownload={onDownloadReport}
+                onShare={onShareLink}
+                onCopy={onCopySummary}
+              />
+            </div>
           </div>
-        </section>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ExplanationPanel 
+              explanation={results.countermeasure?.explanation} 
+              recommendation={results.countermeasure?.recommendation}
+            />
+            <AlternativeSources sources={results.alternative_sources} />
+          </div>
+
+          {results.suspicious_sentences?.length > 0 && (
+            <SuspiciousSentences sentences={results.suspicious_sentences} />
+          )}
+        </div>
       )}
+
+      {isLoading && <LoadingOverlay message="Analyzing text content..." />}
     </div>
   );
 }
 
-export default TextAnalysis;
+export default function TextAnalysisPage() {
+  return (
+    <ErrorBoundary>
+      <TextAnalysis />
+    </ErrorBoundary>
+  );
+}

@@ -54,12 +54,31 @@ module.exports = {
         blob: 'blob 7s infinite',
       },
       keyframes: {
-        float3d: {},
-        'glow-pulse': {},
-        'spin-slow': {},
-        'fade-in-up': {},
-        shimmer: {},
-        blob: {},
+        float3d: {
+          '0%, 100%': { transform: 'translateY(0) rotateX(0) rotateY(0)' },
+          '50%': { transform: 'translateY(-15px) rotateX(5deg) rotateY(3deg)' },
+        },
+        'glow-pulse': {
+          '0%, 100%': { opacity: 0.6, transform: 'scale(1)' },
+          '50%': { opacity: 0.9, transform: 'scale(1.05)' },
+        },
+        'spin-slow': {
+          from: { transform: 'rotate(0deg)' },
+          to: { transform: 'rotate(360deg)' },
+        },
+        'fade-in-up': {
+          from: { opacity: 0, transform: 'translateY(15px)' },
+          to: { opacity: 1, transform: 'translateY(0)' },
+        },
+        shimmer: {
+          '100%': { transform: 'translateX(100%)' },
+        },
+        blob: {
+          '0%': { transform: 'translate(0px, 0px) scale(1)' },
+          '33%': { transform: 'translate(20px, -40px) scale(1.1)' },
+          '66%': { transform: 'translate(-15px, 15px) scale(0.95)' },
+          '100%': { transform: 'translate(0px, 0px) scale(1)' },
+        },
       },
     },
   },

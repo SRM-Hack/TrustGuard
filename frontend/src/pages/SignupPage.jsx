@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
+import { authTranslations } from "../locales/translations";
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -9,6 +11,7 @@ function isValidEmail(value) {
 
 function SignupPage() {
   const { login } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
@@ -28,24 +31,24 @@ function SignupPage() {
   const onSubmit = (event) => {
     event.preventDefault();
     const nextErrors = {};
-    if (!formData.name.trim()) nextErrors.name = "Full name is required.";
-    if (!formData.email.trim()) nextErrors.email = "Email is required.";
+    if (!formData.name.trim()) nextErrors.name = t("nameRequired", authTranslations);
+    if (!formData.email.trim()) nextErrors.email = t("emailRequired", authTranslations);
     if (formData.email && !isValidEmail(formData.email)) {
-      nextErrors.email = "Enter a valid email address.";
+      nextErrors.email = t("emailInvalid", authTranslations);
     }
-    if (!formData.password) nextErrors.password = "Password is required.";
+    if (!formData.password) nextErrors.password = t("passwordRequired", authTranslations);
     if (formData.password && formData.password.length < 8) {
-      nextErrors.password = "Use at least 8 characters.";
+      nextErrors.password = t("passwordMinLength", authTranslations);
     }
     if (formData.confirmPassword !== formData.password) {
-      nextErrors.confirmPassword = "Passwords do not match.";
+      nextErrors.confirmPassword = t("passwordsDoNotMatch", authTranslations);
     }
     if (!formData.agreeTerms) {
-      nextErrors.agreeTerms = "You must agree to the terms.";
+      nextErrors.agreeTerms = t("agreeTermsRequired", authTranslations);
     }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-      toast.error("Please correct the highlighted fields.");
+      toast.error(t("highlightedError", authTranslations));
       return;
     }
 
@@ -53,7 +56,7 @@ function SignupPage() {
     setTimeout(() => {
       login({ email: formData.email, name: formData.name });
       setIsSubmitting(false);
-      toast.success("Account created successfully.");
+      toast.success(t("signupSuccess", authTranslations));
       navigate("/analyze/text");
     }, 700);
   };
@@ -71,21 +74,21 @@ function SignupPage() {
               <path d="M12 2.4 4 5.9v6.5c0 5.4 3.4 9.9 8 11.2 4.6-1.3 8-5.8 8-11.2V5.9L12 2.4Z" />
             </svg>
           </div>
-          <h1 className="font-display text-2xl font-bold text-gray-900 tracking-tight">Create Account</h1>
-          <p className="text-sm text-gray-500 mt-1">Join TruthGuard - free access to all tools</p>
+          <h1 className="font-display text-2xl font-bold text-gray-900 tracking-tight">{t("signupTitle", authTranslations)}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t("signupSub", authTranslations)}</p>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-5">
           <div className="space-y-1.5">
             <label htmlFor="name" className="block text-xs font-bold uppercase tracking-widest text-gray-500 ml-1">
-              Full Name
+              {t("nameLabel", authTranslations)}
             </label>
             <input
               id="name"
               type="text"
               value={formData.name}
               onChange={(e) => updateField("name", e.target.value)}
-              placeholder="John Doe"
+              placeholder={t("namePlaceholder", authTranslations)}
               className={`input-base w-full ${errors.name ? 'border-red-400' : ''}`}
             />
             {errors.name && (
@@ -97,14 +100,14 @@ function SignupPage() {
 
           <div className="space-y-1.5">
             <label htmlFor="email" className="block text-xs font-bold uppercase tracking-widest text-gray-500 ml-1">
-              Email Address
+              {t("emailLabel", authTranslations)}
             </label>
             <input
               id="email"
               type="email"
               value={formData.email}
               onChange={(e) => updateField("email", e.target.value)}
-              placeholder="name@company.com"
+              placeholder={t("emailPlaceholder", authTranslations)}
               className={`input-base w-full ${errors.email ? 'border-red-400' : ''}`}
             />
             {errors.email && (
@@ -117,7 +120,7 @@ function SignupPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label htmlFor="password" className="block text-xs font-bold uppercase tracking-widest text-gray-500 ml-1">
-                Password
+                {t("passwordLabel", authTranslations)}
               </label>
               <div className="relative">
                 <input
@@ -125,9 +128,16 @@ function SignupPage() {
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) => updateField("password", e.target.value)}
-                  placeholder="Min. 8 chars"
-                  className={`input-base w-full ${errors.password ? 'border-red-400' : ''}`}
+                  placeholder={t("passwordPlaceholder", authTranslations)}
+                  className={`input-base w-full pr-10 ${errors.password ? 'border-red-400' : ''}`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                >
+                  {showPassword ? "👁️" : "👁️‍🗨️"}
+                </button>
               </div>
               {errors.password && (
                 <p className="flex items-center gap-1 mt-1 text-xs text-red-500 font-medium ml-1">
@@ -138,14 +148,14 @@ function SignupPage() {
 
             <div className="space-y-1.5">
               <label htmlFor="confirmPassword" className="block text-xs font-bold uppercase tracking-widest text-gray-500 ml-1">
-                Confirm
+                {t("confirmPasswordLabel", authTranslations)}
               </label>
               <input
                 id="confirmPassword"
                 type="password"
                 value={formData.confirmPassword}
                 onChange={(e) => updateField("confirmPassword", e.target.value)}
-                placeholder="Repeat password"
+                placeholder={t("confirmPasswordPlaceholder", authTranslations)}
                 className={`input-base w-full ${errors.confirmPassword ? 'border-red-400' : ''}`}
               />
               {errors.confirmPassword && (
@@ -165,7 +175,10 @@ function SignupPage() {
               className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <label htmlFor="agreeTerms" className="text-xs text-gray-600 leading-relaxed">
-              I agree to the <a href="#" className="text-blue-600 font-bold hover:underline">Terms of Service</a> and <a href="#" className="text-blue-600 font-bold hover:underline">Privacy Policy</a>.
+              {t("agreeTo", authTranslations)}{" "}
+              <a href="#" className="text-blue-600 font-bold hover:underline">{t("termsOfService", authTranslations)}</a>{" "}
+              {t("and", authTranslations)}{" "}
+              <a href="#" className="text-blue-600 font-bold hover:underline">{t("privacyPolicy", authTranslations)}</a>.
             </label>
           </div>
           {errors.agreeTerms && (
@@ -182,11 +195,11 @@ function SignupPage() {
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                <span>Creating account...</span>
+                <span>{t("creatingAccount", authTranslations)}</span>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <span>Create account</span>
+                <span>{t("signupBtn", authTranslations)}</span>
                 <span className="group-hover:translate-x-1 transition-transform">→</span>
               </div>
             )}
@@ -195,9 +208,9 @@ function SignupPage() {
 
         <div className="mt-8 pt-6 border-t border-gray-100 text-center">
           <p className="text-sm text-gray-600">
-            Already have an account?{" "}
+            {t("haveAccount", authTranslations)}{" "}
             <Link to="/login" className="font-bold text-blue-600 hover:text-blue-700 transition-colors">
-              Log in instead
+              {t("loginBtn", authTranslations)}
             </Link>
           </p>
         </div>

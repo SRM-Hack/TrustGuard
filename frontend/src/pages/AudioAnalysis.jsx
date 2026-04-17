@@ -9,6 +9,8 @@ import LanguageSelector from "../components/LanguageSelector";
 import LoadingOverlay from "../components/LoadingOverlay";
 import TrustScoreGauge from "../components/TrustScoreGauge";
 import { analyzeAudio } from "../api/truthguard";
+import { useLanguage } from "../context/LanguageContext";
+import { analysisTranslations } from "../locales/translations";
 import {
   getVerdictPresentation,
   normalizeAnalysisResults,
@@ -24,6 +26,7 @@ const LOADING_MESSAGES = [
 ];
 
 function AudioAnalysis() {
+  const { t, language } = useLanguage();
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedLanguage, setSelectedLanguage] = useState("auto");
   const [isLoading, setIsLoading] = useState(false);
@@ -59,14 +62,14 @@ function AudioAnalysis() {
 
   const onAnalyze = async () => {
     if (!selectedFile) {
-      toast.error("Please upload an audio file first.");
+      toast.error(t("uploadAudioError", analysisTranslations) || "Please upload an audio file first.");
       return;
     }
 
     try {
       setIsLoading(true);
       setError("");
-      const payload = await analyzeAudio(selectedFile, selectedLanguage);
+      const payload = await analyzeAudio(selectedFile, selectedLanguage === "auto" ? language : selectedLanguage);
       const normalized = normalizeAnalysisResults(payload);
       setResults(normalized);
 
@@ -76,11 +79,11 @@ function AudioAnalysis() {
         modality: "audio",
         trust_score: normalized.trust_score,
         verdict: normalized.verdict,
-        language: normalized.language || selectedLanguage,
+        language: normalized.language || language,
         results: normalized,
       });
 
-      toast.success("Audio analysis completed.");
+      toast.success(t("analysisSuccess", analysisTranslations) || "Audio analysis completed.");
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
@@ -100,15 +103,15 @@ function AudioAnalysis() {
       score: results.trust_score,
       verdict: results.verdict,
       emoji: verdictStyle.emoji,
-      language: results.language || selectedLanguage,
+      language: results.language || language,
       flags: results.flags,
     });
 
     try {
       await navigator.clipboard.writeText(summary);
-      toast.success("Analysis summary copied to clipboard!");
+      toast.success(t("summaryCopied", analysisTranslations) || "Analysis summary copied to clipboard!");
     } catch (err) {
-      toast.error("Unable to copy summary.");
+      toast.error(t("copyError", analysisTranslations) || "Unable to copy summary.");
     }
   };
 
@@ -118,15 +121,15 @@ function AudioAnalysis() {
       modality: "audio",
       score: results.trust_score,
       verdict: results.verdict,
-      language: results.language || selectedLanguage,
+      language: results.language || language,
       flags: results.flags,
     });
 
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toast.success("Share link copied to clipboard!");
+      toast.success(t("linkCopied", analysisTranslations) || "Share link copied to clipboard!");
     } catch (err) {
-      toast.error("Unable to copy share link.");
+      toast.error(t("copyError", analysisTranslations) || "Unable to copy share link.");
     }
   };
 
@@ -137,12 +140,12 @@ function AudioAnalysis() {
       score: results.trust_score,
       verdict: results.verdict,
       emoji: verdictStyle.emoji,
-      language: results.language || selectedLanguage,
+      language: results.language || language,
       flags: results.flags,
       explanation: results.countermeasure?.explanation,
       sources: results.alternative_sources,
     });
-    toast.success("Downloading analysis report...");
+    toast.success(t("downloadingReport", analysisTranslations) || "Downloading analysis report...");
   };
 
   const handleNewAnalysis = () => {
@@ -163,10 +166,10 @@ function AudioAnalysis() {
         <div className="relative z-10 space-y-6">
           <div className="space-y-2">
             <h2 className="font-display font-black text-3xl text-gray-900 tracking-tight">
-              Audio Analysis
+              {t("audioTitle", analysisTranslations)}
             </h2>
             <p className="text-gray-500 font-medium max-w-2xl leading-relaxed">
-              Transcribe audio and detect AI-cloned or synthesized voices using state-of-the-art neural analysis.
+              {t("audioSub", analysisTranslations)}
             </p>
           </div>
 
@@ -196,10 +199,8 @@ function AudioAnalysis() {
           <div className="space-y-6 pt-4">
             <FileUpload
               accept="audio/wav,audio/mp3,audio/mpeg,audio/m4a,audio/ogg"
-              maxSizeMB={50}
-              onFileSelected={setSelectedFile}
-              label="Source Audio"
-              icon="🎙️"
+              onFileSelect={setSelectedFile}
+              selectedFile={selectedFile}
             />
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -207,7 +208,7 @@ function AudioAnalysis() {
               
               <div className="flex items-center gap-3">
                 {selectedFile && (
-                  <div className="badge-blue !bg-blue-50 !border-blue-100 text-[10px] font-bold py-2 px-4 flex items-center gap-2">
+                  <div className="badge-blue !bg-blue-50 !border-blue-100 text-[10px] font-bold py-2 px-4 flex items-center gap-2 uppercase">
                     <span className="opacity-50">DURATION:</span>
                     <span>{formatDuration(audioDuration)}</span>
                   </div>
@@ -218,11 +219,28 @@ function AudioAnalysis() {
                   disabled={isLoading || !selectedFile}
                   className="btn-primary h-12 px-8 text-base group"
                 >
-                  {isLoading ? "Processing..." : "Analyze Audio"}
+                  {isLoading ? t("analyzingBtn", analysisTranslations) : t("analyzeBtn", analysisTranslations)}
                   <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                 </button>
               </div>
             </div>
+
+            {results && !isLoading && (
+              <div className="flex flex-wrap gap-3 pt-2">
+                <button onClick={onCopySummary} className="btn-secondary h-12 px-6">
+                  📋 {t("copySummary", analysisTranslations)}
+                </button>
+                <button onClick={onShareLink} className="btn-secondary h-12 px-6">
+                  🔗 {t("shareLink", analysisTranslations)}
+                </button>
+                <button onClick={onDownloadReport} className="btn-secondary h-12 px-6">
+                  ⬇️ {t("downloadReport", analysisTranslations)}
+                </button>
+                <button onClick={handleNewAnalysis} className="btn-secondary h-12 px-6 text-red-600 hover:text-red-700">
+                  {t("newAnalysis", analysisTranslations)}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </section>

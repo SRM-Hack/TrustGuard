@@ -1,6 +1,10 @@
 import { Link } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext";
+import { commonTranslations } from "../locales/translations";
 
 function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer className="relative mt-auto w-full border-t border-white/10 bg-gradient-to-r from-slate-900/95 via-blue-950/90 to-slate-900/95 backdrop-blur-xl py-12 px-4 overflow-hidden">
       {/* Background decoration */}
@@ -18,11 +22,11 @@ function Footer() {
                 </svg>
               </div>
               <span className="font-display font-bold text-xl text-white tracking-tight">
-                TruthGuard
+                {t("appName", commonTranslations)}
               </span>
             </div>
             <p className="text-blue-300/70 text-sm font-medium leading-relaxed">
-              Advanced AI-driven multi-modal misinformation detection and fact-verification platform.
+              {t("footerMission", commonTranslations)}
             </p>
             <p className="text-white/40 text-xs font-bold uppercase tracking-widest pt-2">
               CodeWizards 2.0 · SRMIST Delhi-NCR
@@ -32,24 +36,24 @@ function Footer() {
           {/* CENTER COLUMN */}
           <div className="space-y-6">
             <h4 className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">
-              Quick Links
+              {t("quickLinks", commonTranslations)}
             </h4>
             <nav className="grid grid-cols-2 gap-y-3 gap-x-4">
-              <Link to="/analyze/text" className="text-sm text-white/60 hover:text-blue-300 transition-colors font-medium">Text Analysis</Link>
-              <Link to="/analyze/image" className="text-sm text-white/60 hover:text-blue-300 transition-colors font-medium">Image Analysis</Link>
-              <Link to="/analyze/audio" className="text-sm text-white/60 hover:text-blue-300 transition-colors font-medium">Audio Analysis</Link>
-              <Link to="/analyze/video" className="text-sm text-white/60 hover:text-blue-300 transition-colors font-medium">Video Analysis</Link>
-              <Link to="/dashboard" className="text-sm text-white/60 hover:text-blue-300 transition-colors font-medium">Analytics Dashboard</Link>
+              <Link to="/analyze/text" className="text-sm text-white/60 hover:text-blue-300 transition-colors font-medium">{t("navText", commonTranslations)}</Link>
+              <Link to="/analyze/image" className="text-sm text-white/60 hover:text-blue-300 transition-colors font-medium">{t("navImage", commonTranslations)}</Link>
+              <Link to="/analyze/audio" className="text-sm text-white/60 hover:text-blue-300 transition-colors font-medium">{t("navAudio", commonTranslations)}</Link>
+              <Link to="/analyze/video" className="text-sm text-white/60 hover:text-blue-300 transition-colors font-medium">{t("navVideo", commonTranslations)}</Link>
+              <Link to="/dashboard" className="text-sm text-white/60 hover:text-blue-300 transition-colors font-medium">{t("navDashboard", commonTranslations)}</Link>
             </nav>
           </div>
 
           {/* RIGHT COLUMN */}
           <div className="space-y-6">
             <h4 className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">
-              Built For
+              {t("builtFor", commonTranslations)}
             </h4>
             <div className="space-y-2">
-              <p className="text-sm text-white/70 font-bold">CodeWizards 2.0 Hackathon</p>
+              <p className="text-sm text-white/70 font-bold">{t("hackathon", commonTranslations)}</p>
               <p className="text-xs text-white/40 font-medium">Problem Statement #5: AI in Governance & Truth</p>
               <div className="pt-2 flex items-center gap-2 text-white/40">
                 <span className="text-lg">📍</span>

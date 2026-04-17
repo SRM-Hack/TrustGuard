@@ -1,5 +1,7 @@
 import { Fragment, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext";
+import { dashboardTranslations } from "../locales/translations";
 import {
   Bar,
   BarChart,
@@ -30,6 +32,7 @@ function formatTime(value) {
 }
 
 function Dashboard() {
+  const { t } = useLanguage();
   const [analysisHistory] = useState(readHistory);
   const [expandedRow, setExpandedRow] = useState(null);
 
@@ -56,24 +59,24 @@ function Dashboard() {
   const verdictDistribution = useMemo(
     () => [
       {
-        name: "Trusted",
+        name: t("trusted", dashboardTranslations),
         value: analysisHistory.filter((item) => item.verdict === "TRUSTED").length,
         color: "#16A34A",
       },
       {
-        name: "Suspicious",
+        name: t("suspicious", dashboardTranslations),
         value: analysisHistory.filter((item) => item.verdict === "SUSPICIOUS").length,
         color: "#D97706",
       },
       {
-        name: "Misinformation",
+        name: t("misinformation", dashboardTranslations),
         value: analysisHistory.filter(
           (item) => item.verdict === "MISINFORMATION"
         ).length,
         color: "#DC2626",
       },
     ].filter(v => v.value > 0),
-    [analysisHistory]
+    [analysisHistory, t]
   );
 
   const modalityData = useMemo(() => {
@@ -91,10 +94,10 @@ function Dashboard() {
   }, [analysisHistory]);
 
   const statCards = [
-    { label: "Total Analyses", value: stats.total, icon: "📊", color: "blue" },
-    { label: "Misinformation", value: stats.misinformation, icon: "🚫", color: "red" },
-    { label: "Suspicious Content", value: stats.suspicious, icon: "⚠️", color: "orange" },
-    { label: "Avg Trust Score", value: `${stats.averageScore}/100`, icon: "✅", color: "emerald" },
+    { label: t("totalAnalyses", dashboardTranslations), value: stats.total, icon: "📊", color: "blue" },
+    { label: t("misinformation", dashboardTranslations), value: stats.misinformation, icon: "🚫", color: "red" },
+    { label: t("suspiciousContent", dashboardTranslations), value: stats.suspicious, icon: "⚠️", color: "orange" },
+    { label: t("avgTrustScore", dashboardTranslations), value: `${stats.averageScore}/100`, icon: "✅", color: "emerald" },
   ];
 
   if (analysisHistory.length === 0) {
@@ -103,9 +106,9 @@ function Dashboard() {
         <div className="trust-card p-12 text-center flex flex-col items-center gap-6">
           <span className="text-7xl animate-float-3d">🔍</span>
           <div className="space-y-2">
-            <h1 className="font-display font-black text-3xl text-gray-900 tracking-tight">No analyses yet</h1>
+            <h1 className="font-display font-black text-3xl text-gray-900 tracking-tight">{t("noAnalyses", dashboardTranslations)}</h1>
             <p className="text-gray-500 font-medium max-w-md mx-auto">
-              Your dashboard will come to life once you start analyzing content using the navigation above.
+              {t("noAnalysesSub", dashboardTranslations)}
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-4 mt-4">
@@ -122,8 +125,8 @@ function Dashboard() {
   return (
     <div className="space-y-10 animate-fade-in pb-20">
       <header>
-        <h1 className="font-display font-black text-3xl text-gray-900 tracking-tight">Analysis Dashboard</h1>
-        <p className="text-gray-500 font-medium mt-1">Your session analysis history and statistics</p>
+        <h1 className="font-display font-black text-3xl text-gray-900 tracking-tight">{t("dashboardTitle", dashboardTranslations)}</h1>
+        <p className="text-gray-500 font-medium mt-1">{t("dashboardSub", dashboardTranslations)}</p>
       </header>
 
       {/* STATS ROW */}
@@ -136,7 +139,7 @@ function Dashboard() {
           >
             <div className="flex items-center justify-between mb-4">
               <span className="text-2xl">{card.icon}</span>
-              <span className={`badge-${card.color} !bg-${card.color}-500/10 uppercase font-black text-[10px]`}>Active Session</span>
+              <span className={`badge-${card.color} !bg-${card.color}-500/10 uppercase font-black text-[10px]`}>{t("activeSession", dashboardTranslations)}</span>
             </div>
             <p className="text-3xl font-display font-black text-gray-900">{card.value}</p>
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">{card.label}</p>
@@ -147,7 +150,49 @@ function Dashboard() {
       {/* CHARTS ROW */}
       <section className="grid grid-cols-1 xl:grid-cols-5 gap-8">
         <div className="xl:col-span-2 trust-card space-y-6">
-          <h3 className="font-display font-bold text-gray-900">Verdict Distribution</h3>
+          <h3 className="font-display font-bold text-gray-900">{t("verdictDistribution", dashboardTranslations)}</h3>
+          <div className="h-[300px] w-full relative">
+            {verdictDistribution.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={verdictDistribution}
+                    innerRadius={80}
+                    outerRadius={110}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {verdictDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      borderRadius: '12px', 
+                      border: 'none', 
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                      fontSize: '12px',
+                      fontWeight: '700'
+                    }} 
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400 text-sm italic">No data to display</div>
+            )}
+          </div>
+          <div className="flex flex-wrap justify-center gap-6 pt-2">
+            {verdictDistribution.map((entry, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="text-xs font-bold text-gray-600 uppercase tracking-tight">{entry.name} ({entry.value})</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="xl:col-span-3 trust-card space-y-6">
+          <h3 className="font-display font-bold text-gray-900">{t("analysesByModality", dashboardTranslations)}</h3>
           <div className="h-[300px] w-full relative">
             {verdictDistribution.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -239,64 +284,85 @@ function Dashboard() {
 
       {/* HISTORY TABLE */}
       <section className="trust-card space-y-6">
-        <div>
-          <h3 className="font-display font-bold text-gray-900">Recent Analysis History</h3>
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mt-1">Last 10 analyses from this session</p>
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h3 className="font-display font-bold text-gray-900">{t("historyTitle", dashboardTranslations)}</h3>
+            <p className="text-xs text-gray-500 font-medium">{t("historySub", dashboardTranslations)}</p>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-separate border-spacing-y-2">
+          <table className="w-full text-left border-separate border-spacing-y-3">
             <thead>
               <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                <th className="px-4 py-2">Time</th>
-                <th className="px-4 py-2">Type</th>
-                <th className="px-4 py-2 text-center">Trust Score</th>
-                <th className="px-4 py-2">Verdict</th>
-                <th className="px-4 py-2">Language</th>
-                <th className="px-4 py-2"></th>
+                <th className="px-6 pb-2">{t("time", dashboardTranslations)}</th>
+                <th className="px-6 pb-2">{t("modality", dashboardTranslations)}</th>
+                <th className="px-6 pb-2">{t("score", dashboardTranslations)}</th>
+                <th className="px-6 pb-2">{t("verdict", dashboardTranslations)}</th>
+                <th className="px-6 pb-2 text-right">{t("action", dashboardTranslations)}</th>
               </tr>
             </thead>
             <tbody>
               {analysisHistory.map((item, idx) => {
-                const score = Number(item.trust_score) || 0;
-                const scoreColor = score >= 70 ? 'text-green-600' : score >= 40 ? 'text-orange-600' : 'text-red-600';
                 const rowId = item.id || `${item.time}-${idx}`;
                 const isExpanded = expandedRow === rowId;
-
+                const score = Number(item.trust_score) || 0;
+                const scoreColor = 
+                  score >= 70 ? 'text-emerald-600' : 
+                  score >= 40 ? 'text-amber-600' : 'text-red-600';
+                
                 return (
                   <Fragment key={rowId}>
-                    <tr 
-                      className={`group cursor-pointer transition-all duration-200 ${isExpanded ? 'bg-blue-50/50' : 'hover:bg-gray-50'}`}
-                      onClick={() => setExpandedRow(isExpanded ? null : rowId)}
-                    >
-                      <td className="px-4 py-4 text-xs font-bold text-gray-500 rounded-l-xl">{formatTime(item.time)}</td>
-                      <td className="px-4 py-4">
-                        <span className={`badge-blue !bg-white border border-blue-100 !text-blue-600 uppercase text-[10px] font-black`}>
-                          {item.modality}
+                    <tr className={`group transition-all duration-200 ${isExpanded ? 'bg-blue-50/50' : 'hover:bg-gray-50/80'}`}>
+                      <td className="px-6 py-4 rounded-l-2xl border-y border-l border-gray-100/50 font-medium text-xs text-gray-500">
+                        {formatTime(item.time)}
+                      </td>
+                      <td className="px-6 py-4 border-y border-gray-100/50">
+                        <span className="flex items-center gap-2 font-bold text-xs text-gray-700">
+                          {item.modality === 'text' && '📝'}
+                          {item.modality === 'image' && '🖼️'}
+                          {item.modality === 'audio' && '🎙️'}
+                          {item.modality === 'video' && '🎬'}
+                          <span className="capitalize">{item.modality}</span>
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-center">
-                        <span className={`font-display font-black text-lg ${scoreColor}`}>{score}</span>
-                        <span className="text-[10px] font-bold text-gray-300 ml-0.5">/100</span>
+                      <td className={`px-6 py-4 border-y border-gray-100/50 font-black text-sm ${scoreColor}`}>
+                        {score}%
                       </td>
-                      <td className="px-4 py-4">
-                        <span className={`badge-${item.verdict === 'TRUSTED' ? 'green' : item.verdict === 'SUSPICIOUS' ? 'orange' : 'red'} text-[10px] font-black uppercase`}>
+                      <td className="px-6 py-4 border-y border-gray-100/50">
+                        <span className={`badge-${item.verdict === 'TRUSTED' ? 'green' : item.verdict === 'SUSPICIOUS' ? 'orange' : 'red'} !text-[10px] uppercase font-black tracking-widest`}>
                           {item.verdict}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-xs font-bold text-gray-600 uppercase">{item.language || 'en'}</td>
-                      <td className="px-4 py-4 text-right rounded-r-xl">
-                        <span className={`inline-block transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
+                      <td className="px-6 py-4 rounded-r-2xl border-y border-r border-gray-100/50 text-right">
+                        <button
+                          onClick={() => setExpandedRow(isExpanded ? null : rowId)}
+                          className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-wider"
+                        >
+                          {isExpanded ? "Close" : t("viewDetails", dashboardTranslations)}
+                        </button>
                       </td>
                     </tr>
                     {isExpanded && (
                       <tr>
-                        <td colSpan={6} className="px-4 pb-4 animate-fade-in">
-                          <div className="bg-gray-950 rounded-2xl p-6 shadow-inner relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4 opacity-10 text-white font-black text-4xl pointer-events-none">JSON</div>
-                            <pre className="text-[11px] font-mono text-blue-300 overflow-x-auto custom-scrollbar">
-                              {JSON.stringify(item.results || item, null, 2)}
-                            </pre>
+                        <td colSpan={5} className="px-6 py-4 bg-blue-50/30 rounded-2xl border border-blue-100/50">
+                          <div className="space-y-4 animate-fade-in">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                              <div className="space-y-1">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Language</p>
+                                <p className="text-xs font-bold text-gray-700 uppercase">{item.language || 'N/A'}</p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ID</p>
+                                <p className="text-xs font-mono text-gray-500 truncate">{item.id}</p>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Raw Data (JSON)</p>
+                              <pre className="text-[10px] bg-white/80 p-4 rounded-xl border border-gray-200 overflow-auto max-h-[200px] font-mono text-gray-600 leading-relaxed shadow-inner">
+                                {JSON.stringify(item.results || item, null, 2)}
+                              </pre>
+                            </div>
                           </div>
                         </td>
                       </tr>

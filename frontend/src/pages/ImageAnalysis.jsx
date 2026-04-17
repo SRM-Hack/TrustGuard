@@ -8,6 +8,8 @@ import FileUpload from "../components/FileUpload";
 import LoadingOverlay from "../components/LoadingOverlay";
 import TrustScoreGauge from "../components/TrustScoreGauge";
 import { analyzeImage } from "../api/truthguard";
+import { useLanguage } from "../context/LanguageContext";
+import { analysisTranslations } from "../locales/translations";
 import {
   getVerdictPresentation,
   normalizeAnalysisResults,
@@ -16,6 +18,7 @@ import {
 import { downloadReport, generateShareLink, generateSummary } from "../utils/reportGenerator";
 
 function ImageAnalysis() {
+  const { t, language } = useLanguage();
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +51,7 @@ function ImageAnalysis() {
 
   const onAnalyze = async () => {
     if (!selectedFile) {
-      toast.error("Please upload an image first.");
+      toast.error(t("uploadImageError", analysisTranslations) || "Please upload an image first.");
       return;
     }
 
@@ -66,11 +69,11 @@ function ImageAnalysis() {
         modality: "image",
         trust_score: normalized.trust_score,
         verdict: normalized.verdict,
-        language: "en",
+        language: language,
         results: normalized,
       });
 
-      toast.success("Image analysis completed.");
+      toast.success(t("analysisSuccess", analysisTranslations) || "Image analysis completed.");
       
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -91,14 +94,14 @@ function ImageAnalysis() {
       score: results.trust_score,
       verdict: results.verdict,
       emoji: verdictStyle.emoji,
-      language: results.language || "en",
+      language: results.language || language,
       flags: results.flags,
     });
     try {
       await navigator.clipboard.writeText(summary);
-      toast.success("Analysis summary copied to clipboard!");
+      toast.success(t("summaryCopied", analysisTranslations) || "Analysis summary copied to clipboard!");
     } catch (err) {
-      toast.error("Unable to copy summary.");
+      toast.error(t("copyError", analysisTranslations) || "Unable to copy summary.");
     }
   };
 
@@ -108,15 +111,15 @@ function ImageAnalysis() {
       modality: "image",
       score: results.trust_score,
       verdict: results.verdict,
-      language: results.language || "en",
+      language: results.language || language,
       flags: results.flags,
     });
 
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toast.success("Share link copied to clipboard!");
+      toast.success(t("linkCopied", analysisTranslations) || "Share link copied to clipboard!");
     } catch (err) {
-      toast.error("Unable to copy share link.");
+      toast.error(t("copyError", analysisTranslations) || "Unable to copy share link.");
     }
   };
 
@@ -127,12 +130,12 @@ function ImageAnalysis() {
       score: results.trust_score,
       verdict: results.verdict,
       emoji: verdictStyle.emoji,
-      language: results.language || "en",
+      language: results.language || language,
       flags: results.flags,
       explanation: results.countermeasure?.explanation,
       sources: results.alternative_sources,
     });
-    toast.success("Downloading analysis report...");
+    toast.success(t("downloadingReport", analysisTranslations) || "Downloading analysis report...");
   };
 
   const handleNewAnalysis = () => {
@@ -154,10 +157,10 @@ function ImageAnalysis() {
         <div className="relative z-10 space-y-6">
           <div className="space-y-2">
             <h2 className="font-display font-black text-3xl text-gray-900 tracking-tight">
-              Image Deepfake Analysis
+              {t("imageTitle", analysisTranslations)}
             </h2>
             <p className="text-gray-500 font-medium max-w-2xl leading-relaxed">
-              Detect manipulated images, generative AI artifacts, and face-swaps using a specialized 2-model Vision Transformer (ViT) ensemble.
+              {t("imageSub", analysisTranslations)}
             </p>
           </div>
 
@@ -173,22 +176,20 @@ function ImageAnalysis() {
             <div className="space-y-6">
               <FileUpload
                 accept="image/jpeg,image/png,image/webp,image/gif"
-                maxSizeMB={20}
-                onFileSelected={setSelectedFile}
-                label="Source Image"
-                icon="🖼️"
+                onFileSelect={setSelectedFile}
+                selectedFile={selectedFile}
               />
 
               {selectedFile && (
                 <div className="flex flex-wrap gap-2 animate-fade-in">
-                  <span className="badge-blue !bg-blue-50 !border-blue-100 text-[10px] font-bold">
-                    NAME: {selectedFile.name.length > 20 ? selectedFile.name.substring(0, 17) + '...' : selectedFile.name}
+                  <span className="badge-blue !bg-blue-50 !border-blue-100 text-[10px] font-bold uppercase">
+                    {selectedFile.name.length > 20 ? selectedFile.name.substring(0, 17) + '...' : selectedFile.name}
                   </span>
                   <span className="badge-blue !bg-blue-50 !border-blue-100 text-[10px] font-bold">
-                    SIZE: {formatBytes(selectedFile.size)}
+                    {formatBytes(selectedFile.size)}
                   </span>
                   <span className="badge-blue !bg-blue-50 !border-blue-100 text-[10px] font-bold">
-                    TYPE: {selectedFile.type.split('/')[1].toUpperCase()}
+                    {selectedFile.type.split('/')[1].toUpperCase()}
                   </span>
                 </div>
               )}
@@ -200,23 +201,23 @@ function ImageAnalysis() {
                   disabled={isLoading || !selectedFile}
                   className="btn-primary flex-1 h-12 text-base group"
                 >
-                  {isLoading ? "Processing..." : "Analyze Image"}
+                  {isLoading ? t("analyzingBtn", analysisTranslations) : t("analyzeBtn", analysisTranslations)}
                   <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                 </button>
                 
                 {results && !isLoading && (
                   <>
                     <button onClick={onCopySummary} className="btn-secondary h-12 px-6">
-                      📋 Copy Summary
+                      📋 {t("copySummary", analysisTranslations)}
                     </button>
                     <button onClick={onShareLink} className="btn-secondary h-12 px-6">
-                      🔗 Share Link
+                      🔗 {t("shareLink", analysisTranslations)}
                     </button>
                     <button onClick={onDownloadReport} className="btn-secondary h-12 px-6">
-                      ⬇️ Download Report
+                      ⬇️ {t("downloadReport", analysisTranslations)}
                     </button>
                     <button onClick={handleNewAnalysis} className="btn-secondary h-12 px-6 text-red-600 hover:text-red-700">
-                      Reset
+                      {t("newAnalysis", analysisTranslations)}
                     </button>
                   </>
                 )}

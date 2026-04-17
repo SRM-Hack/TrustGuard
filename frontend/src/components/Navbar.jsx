@@ -1,17 +1,21 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-
-const navItems = [
-  { to: "/analyze/text", label: "Text Analysis", icon: "📝" },
-  { to: "/analyze/image", label: "Image Analysis", icon: "🖼️" },
-  { to: "/analyze/audio", label: "Audio Analysis", icon: "🎙️" },
-  { to: "/analyze/video", label: "Video Analysis", icon: "🎬" },
-];
+import { useLanguage } from "../context/LanguageContext";
+import { commonTranslations } from "../locales/translations";
+import LanguageSelector from "./LanguageSelector";
 
 function Navbar({ apiStatus = "checking" }) {
   const [isOpen, setIsOpen] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
+
+  const navItems = [
+    { to: "/analyze/text", label: t("navText", commonTranslations), icon: "📝" },
+    { to: "/analyze/image", label: t("navImage", commonTranslations), icon: "🖼️" },
+    { to: "/analyze/audio", label: t("navAudio", commonTranslations), icon: "🎙️" },
+    { to: "/analyze/video", label: t("navVideo", commonTranslations), icon: "🎬" },
+  ];
 
   const renderLink = (item, mobile = false) => (
     <NavLink
@@ -53,10 +57,10 @@ function Navbar({ apiStatus = "checking" }) {
           </div>
           <div className="flex items-center gap-2">
             <span className="font-display text-xl font-bold bg-gradient-to-r from-gray-900 to-blue-700 bg-clip-text text-transparent">
-              TruthGuard
+              {t("appName", commonTranslations)}
             </span>
             <span className="glass-blue bg-blue-600/10 px-1.5 py-0.5 text-[10px] font-bold text-blue-600 uppercase rounded tracking-wider">
-              AI
+              {t("aiBadge", commonTranslations)}
             </span>
           </div>
         </NavLink>
@@ -66,9 +70,13 @@ function Navbar({ apiStatus = "checking" }) {
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
+          <div className="pr-4 border-r border-gray-200/50">
+            <LanguageSelector value={language} onChange={setLanguage} />
+          </div>
+
           {isAuthenticated ? (
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2.5 pl-2 border-l border-gray-200/50">
+              <div className="flex items-center gap-2.5 pl-2">
                 <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white text-xs font-bold shadow-md">
                   {user?.name?.charAt(0) || "A"}
                 </div>
@@ -87,7 +95,7 @@ function Navbar({ apiStatus = "checking" }) {
                 onClick={logout}
                 className="btn-secondary !py-1.5 !px-3 !text-xs"
               >
-                Logout
+                {t("logout", commonTranslations)}
               </button>
             </div>
           ) : (
@@ -96,18 +104,17 @@ function Navbar({ apiStatus = "checking" }) {
                 to="/login"
                 className="text-xs font-semibold text-gray-600 hover:text-blue-600 px-3 py-1.5 transition"
               >
-                Login
+                {t("login", commonTranslations)}
               </NavLink>
               <NavLink
                 to="/signup"
                 className="btn-primary !py-1.5 !px-4 !text-xs shadow-blue-500/20"
               >
-                Sign Up
+                {t("signup", commonTranslations)}
               </NavLink>
             </div>
           )}
 
-          {/* API Status Dot Integrated */}
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 border border-gray-100">
             <span
               className={`h-1.5 w-1.5 rounded-full ${
@@ -119,7 +126,7 @@ function Navbar({ apiStatus = "checking" }) {
               }`}
             />
             <span className="text-[10px] font-bold uppercase tracking-tighter text-gray-500">
-              {apiStatus === "online" ? "API Online" : apiStatus === "offline" ? "API Offline" : "Checking"}
+              {apiStatus === "online" ? t("apiOnline", commonTranslations) : apiStatus === "offline" ? t("apiOffline", commonTranslations) : t("checking", commonTranslations)}
             </span>
           </div>
         </div>
@@ -153,6 +160,9 @@ function Navbar({ apiStatus = "checking" }) {
         }`}
       >
         <div className="px-4 py-6 space-y-4">
+          <div className="flex justify-center pb-2">
+            <LanguageSelector value={language} onChange={setLanguage} />
+          </div>
           <nav className="flex flex-col gap-1">
             {navItems.map((item) => renderLink(item, true))}
           </nav>
@@ -170,7 +180,7 @@ function Navbar({ apiStatus = "checking" }) {
                   onClick={() => { logout(); setIsOpen(false); }}
                   className="w-full text-left px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition"
                 >
-                  → Logout
+                  → {t("logout", commonTranslations)}
                 </button>
               </>
             ) : (
@@ -180,14 +190,14 @@ function Navbar({ apiStatus = "checking" }) {
                   onClick={() => setIsOpen(false)}
                   className="text-center py-3 text-sm font-semibold text-gray-600 hover:bg-gray-50 rounded-xl transition"
                 >
-                  Login
+                  {t("login", commonTranslations)}
                 </NavLink>
                 <NavLink
                   to="/signup"
                   onClick={() => setIsOpen(false)}
                   className="btn-primary text-center !py-3"
                 >
-                  Sign Up
+                  {t("signup", commonTranslations)}
                 </NavLink>
               </div>
             )}

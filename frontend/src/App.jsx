@@ -6,6 +6,7 @@ import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import { LanguageProvider } from "./context/LanguageContext";
 import AudioAnalysis from "./pages/AudioAnalysis";
 import Dashboard from "./pages/Dashboard";
 import ImageAnalysis from "./pages/ImageAnalysis";
@@ -183,9 +184,11 @@ function AppShell() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppShell />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <AppShell />
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

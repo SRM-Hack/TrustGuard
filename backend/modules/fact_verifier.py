@@ -18,11 +18,39 @@ class FactVerifier:
         self.fact_check_key = FACT_CHECK_KEY
         self.serper_key = SERPER_KEY
         self.max_claims_to_check = 3
-        self.nlp = spacy.load("en_core_web_sm")
+        try:
+            self.nlp = spacy.load("en_core_web_sm")
+            self.spacy_available = True
+        except Exception:
+            self.nlp = None
+            self.spacy_available = False
+            print(
+                "WARNING: spacy en_core_web_sm not available. "
+                "Using fallback claim extraction."
+            )
 
     def extract_claims(self, text: str) -> list[str]:
         """Extract top claim-worthy sentences from input text."""
+        if not self.spacy_available or not self.nlp:
+            # Fallback: split on sentences and return the longest ones as claims.
+            sentences = [
+                s.strip()
+                for s in text.replace("! ", ". ").replace("? ", ". ").split(". ")
+                if len(s.strip()) > 20
+            ]
+            sentences.sort(key=len, reverse=True)
+            return sentences[: self.max_claims_to_check]
+
         try:
+            non_ascii_ratio = sum(1 for c in text if ord(c) > 127) / max(len(text), 1)
+            if non_ascii_ratio > 0.3:
+                # Non-Latin script - SpaCy won't detect entities reliably.
+                sentences = [
+                    s.strip() for s in text.replace("।", ".").split(".") if len(s.strip()) > 10
+                ]
+                sentences.sort(key=len, reverse=True)
+                return sentences[: self.max_claims_to_check]
+
             doc = self.nlp(text)
             candidate_claims: list[tuple[str, int]] = []
             allowed_entities = {"PERSON", "ORG", "GPE", "DATE", "MONEY", "PERCENT"}

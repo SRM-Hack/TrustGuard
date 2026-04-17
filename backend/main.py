@@ -379,6 +379,68 @@ async def analyze_video(
                 logger.warning("Failed to delete temp video file: %s", temp_path)
 
 
+@app.get("/self-test")
+async def self_test() -> dict[str, Any]:
+    """Run a quick internal self-test of all modules and return pass/fail status."""
+    results: dict[str, Any] = {}
+
+    # Test text detector.
+    try:
+        if text_det:
+            r = text_det.classify_text(
+                "BREAKING: Government secretly plans to ban all mobile phones!"
+            )
+            results["text_detector"] = {
+                "status": "pass",
+                "fake_prob": r.get("fake_probability"),
+            }
+        else:
+            results["text_detector"] = {"status": "not_initialized"}
+    except Exception as e:
+        results["text_detector"] = {"status": "fail", "error": str(e)}
+
+    # Test AI detector.
+    try:
+        if ai_text_det:
+            r = ai_text_det.is_ai_generated("The quick brown fox jumps over the lazy dog.")
+            results["ai_text_detector"] = {"status": "pass", "ai_prob": r.get("ai_probability")}
+        else:
+            results["ai_text_detector"] = {"status": "not_initialized"}
+    except Exception as e:
+        results["ai_text_detector"] = {"status": "fail", "error": str(e)}
+
+    # Test scorer.
+    try:
+        if scorer:
+            r = scorer.calculate_trust_score(
+                {"text": {"fake_probability": 80, "ai_probability": 30}}
+            )
+            results["scorer"] = {"status": "pass", "trust_score": r.get("trust_score")}
+        else:
+            results["scorer"] = {"status": "not_initialized"}
+    except Exception as e:
+        results["scorer"] = {"status": "fail", "error": str(e)}
+
+    # Test fact verifier (no API call — just claim extraction).
+    try:
+        if fact_ver:
+            claims = fact_ver.extract_claims(
+                "India's GDP grew by 7.2% in 2024 according to the World Bank."
+            )
+            results["fact_verifier"] = {"status": "pass", "claims_extracted": len(claims)}
+        else:
+            results["fact_verifier"] = {"status": "not_initialized"}
+    except Exception as e:
+        results["fact_verifier"] = {"status": "fail", "error": str(e)}
+
+    results["overall"] = (
+        "pass"
+        if all(v.get("status") == "pass" for v in results.values() if isinstance(v, dict))
+        else "partial"
+    )
+    return results
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(_, exc: Exception) -> JSONResponse:
     """Catch-all exception handler that returns normalized 500 responses."""

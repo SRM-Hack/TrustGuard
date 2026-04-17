@@ -89,6 +89,13 @@ class TextDetector:
             "CONSPIRACY",
             "MAINSTREAM MEDIA",
             "THEY DON'T WANT YOU TO KNOW",
+            "VIRAL",
+            "SHARE KARO",
+            "FORWARD KARO",
+            "GOVERNMENT HIDING",
+            "BANNED",
+            "ARRESTED",
+            "LEAKED",
         ]
         exaggerated_words = ["100%", "ALL", "NEVER", "ALWAYS", "EVERYONE", "NOBODY"]
 
@@ -152,6 +159,10 @@ class TextDetector:
         self, sentence: str, emotion_words: list[str], exaggerated_words: list[str]
     ) -> str | None:
         """Return a reason if sentence matches any suspicious language pattern."""
+        url_pattern = re.compile(r"(https?://|www\.|bit\.ly|tinyurl)", re.IGNORECASE)
+        if url_pattern.search(sentence):
+            return "Contains embedded links - verify source authenticity"
+
         words = re.findall(r"\b[\w']+\b", sentence)
         upper_words = [word for word in words if word.isupper() and len(word) > 1]
         caps_ratio = (len(upper_words) / len(words)) if words else 0.0

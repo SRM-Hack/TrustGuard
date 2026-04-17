@@ -130,6 +130,23 @@ class TrustScorer:
                 )
                 flags.append("Video frames show deepfake indicators")
 
+        # Also extract audio clone score from video's audio sub-analysis if present.
+        if isinstance(video, dict):
+            video_audio = video.get("audio_analysis")
+            if isinstance(video_audio, dict):
+                video_audio_clone = self._to_number(video_audio.get("voice_clone_score"))
+                if video_audio_clone > 60 and "audio" not in modalities_analyzed:
+                    # Only apply if standalone audio wasn't already analyzed.
+                    score -= 15
+                    self._add_deduction(
+                        score_breakdown,
+                        "video.audio_analysis.voice_clone_score",
+                        15,
+                        video_audio_clone,
+                        "Voice audio extracted from video may be AI-synthesized",
+                    )
+                    flags.append("Voice audio extracted from video may be AI-synthesized")
+
         fact_check = results.get("fact_check")
         if isinstance(fact_check, list):
             modalities_analyzed.append("fact_check")

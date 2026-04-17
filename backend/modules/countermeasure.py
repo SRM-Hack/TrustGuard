@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Any
 
 import google.generativeai as genai
@@ -18,7 +19,10 @@ class CountermeasureEngine:
     def __init__(self) -> None:
         """Initialize LLM clients, API keys, and language metadata."""
         genai.configure(api_key=GEMINI_API_KEY)
-        self.gemini_model = genai.GenerativeModel("gemini-2.0-flash-exp")
+        try:
+            self.gemini_model = genai.GenerativeModel("gemini-2.0-flash")
+        except Exception:
+            self.gemini_model = genai.GenerativeModel("gemini-1.5-flash")
         self.groq_client = Groq(api_key=GROQ_API_KEY)
         self.news_api_key = NEWS_API_KEY
         self.language_names = {"en": "English", "hi": "Hindi", "te": "Telugu"}
@@ -26,15 +30,23 @@ class CountermeasureEngine:
 
     def _call_gemini(self, prompt: str) -> str:
         """Call Gemini and return text response or raise on failure."""
-        try:
-            response = self.gemini_model.generate_content(prompt)
-            text = (response.text or "").strip()
-            if not text:
-                raise RuntimeError("Gemini returned an empty response.")
-            self._last_llm_provider = "gemini"
-            return text
-        except Exception as exc:
-            raise RuntimeError(f"Gemini request failed: {exc}") from exc
+        for attempt in range(3):
+            try:
+                response = self.gemini_model.generate_content(prompt)
+                text = (response.text or "").strip()
+                if text:
+                    self._last_llm_provider = "gemini"
+                    return text
+            except Exception as exc:
+                if attempt < 2:
+                    time.sleep(3)
+                    continue
+                raise RuntimeError(
+                    f"Gemini request failed after 3 attempts: {exc}"
+                ) from exc
+            if attempt < 2:
+                time.sleep(3)
+        raise RuntimeError("Gemini returned empty response after retries")
 
     def _call_groq(self, prompt: str) -> str:
         """Call Groq Llama model and return text response with safe fallback."""
@@ -73,15 +85,15 @@ ANALYZED CONTENT (first 500 characters):
 {content[:500]}
 
 DETECTION FINDINGS:
-{json.dumps(detection_results, indent=2)[:1000]}
+{json.dumps(detection_results, indent=2)[:1500]}
 
 Please provide a clear, calm, factual response with THREE sections:
 1. WHY THIS IS SUSPICIOUS: List 2-3 specific reasons why this content may be misleading
 2. WHAT IS ACTUALLY TRUE: Provide a factual, corrected summary of the topic
 3. WHAT TO CHECK: Tell the user what they can verify themselves to confirm
 
-Keep your response concise (under 300 words). Be helpful and informative, not alarmist.
-Do not repeat the detection numbers - explain them in plain language.
+Keep your response under 300 words. Be helpful and informative, not alarmist.
+Explain detection findings in plain language - do not mention raw numbers.
 """
             return self._call_llm(prompt.strip())
         except Exception:
@@ -98,6 +110,8 @@ Do not repeat the detection numbers - explain them in plain language.
             "MANIPULATED": "Tip: Look for the earliest upload and compare it with reliable archives.",
             "CLONED": "Tip: Confirm unusual audio clips with official statements or full-length recordings.",
             "TRUSTED": "Tip: Even reliable content is best validated with source context and publication date.",
+            "LIKELY_REAL": "Tip: Content appears authentic, but always verify sources before sharing.",
+            "LIKELY_AUTHENTIC": "Tip: Video appears unmanipulated, but context and source still matter.",
         }
         return tips.get(
             verdict_upper,
@@ -162,12 +176,7 @@ Do not repeat the detection numbers - explain them in plain language.
     ) -> dict[str, Any]:
         """Build a full countermeasure package for frontend/API consumers."""
         try:
-            merged_findings = {
-                "detection_results": detection_results,
-                "fact_check_results": fact_check_results,
-                "trust_score": trust_score,
-            }
-            explanation = self.generate_explanation(content, merged_findings, language)
+            explanation = self.generate_explanation(content, detection_results, language)
             topic = (content or "").strip()[:80]
             alternative_sources = self.get_alternative_sources(topic, language)
             verdict = str(trust_score.get("verdict", "SUSPICIOUS"))

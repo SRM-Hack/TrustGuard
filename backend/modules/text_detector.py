@@ -137,7 +137,13 @@ class TextDetector:
             score = float(item.get("score", 0.0))
             highest_score = max(highest_score, score)
 
-            if "FAKE" in label or "LABEL_1" in label:
+            if "PROPAGANDA" in label:
+                # Propaganda is misleading by nature, but not always outright fake.
+                fake_score = max(fake_score, score * 0.7)
+            elif "SATIRE" in label:
+                # Satire can still mislead in detection contexts.
+                fake_score = max(fake_score, score * 0.4)
+            elif "FAKE" in label or "LABEL_1" in label:
                 fake_score = max(fake_score, score)
 
         return round(fake_score * 100.0, 2), highest_score
@@ -197,26 +203,36 @@ class AITextDetector:
     def is_ai_generated(self, text: str) -> dict[str, Any]:
         """Return AI-generation probability and interpretation from perplexity."""
         perplexity = self.compute_perplexity(text)
-        ai_probability = max(0.0, min(((30.0 - perplexity) / 30.0) * 100.0, 100.0))
-        ai_probability = round(ai_probability, 2)
+        if perplexity < 20:
+            ai_probability = 90.0
+        elif perplexity < 30:
+            ai_probability = 75.0
+        elif perplexity < 45:
+            ai_probability = 55.0
+        elif perplexity < 60:
+            ai_probability = 35.0
+        elif perplexity < 80:
+            ai_probability = 20.0
+        else:
+            ai_probability = 5.0
 
         if ai_probability > 65:
             interpretation = (
-                "The text is highly smooth and predictable, which aligns with "
-                "common AI-generated writing patterns."
+                "The text is very smooth and predictable, which strongly aligns "
+                "with AI-generated writing patterns."
             )
-        elif ai_probability > 35:
+        elif ai_probability >= 35:
             interpretation = (
-                "The text shows partial AI-like fluency, but evidence is mixed."
+                "The text shows moderate AI-like fluency, but evidence is mixed."
             )
         else:
             interpretation = (
-                "The text appears varied and less predictable, which is generally "
+                "The text appears relatively varied and less predictable, which is "
                 "more consistent with human-authored writing."
             )
 
         return {
-            "ai_probability": ai_probability,
+            "ai_probability": round(ai_probability, 2),
             "perplexity": round(perplexity, 4),
             "likely_ai_generated": ai_probability > 65,
             "interpretation": interpretation,

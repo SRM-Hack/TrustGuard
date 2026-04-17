@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import time
+
 from langdetect import detect
 import google.generativeai as genai
 import requests
 
 from config import GEMINI_API_KEY, SUPPORTED_LANGUAGES
 
-GEMINI_MODEL = "gemini-2.0-flash-exp"
+GEMINI_MODEL = "gemini-2.0-flash"
 REQUESTS_USER_AGENT = requests.utils.default_user_agent()
 
 
@@ -22,6 +24,14 @@ def detect_language(text: str) -> str:
         return "en"
 
     try:
+        devanagari_chars = sum(1 for c in text if "\u0900" <= c <= "\u097F")
+        if devanagari_chars / max(len(text), 1) > 0.2:
+            return "hi"
+
+        telugu_chars = sum(1 for c in text if "\u0C00" <= c <= "\u0C7F")
+        if telugu_chars / max(len(text), 1) > 0.2:
+            return "te"
+
         lang_code = detect(text)
         return lang_code if lang_code in SUPPORTED_LANGUAGES else "en"
     except Exception:
@@ -42,14 +52,22 @@ def translate_to_english(text: str, source_lang: str) -> str:
         f"Return only the translation, nothing else: {text}"
     )
 
-    try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel(GEMINI_MODEL)
-        response = model.generate_content(prompt)
-        translated = (response.text or "").strip()
-        return translated if translated else text
-    except Exception:
-        return text
+    for attempt in range(3):
+        try:
+            genai.configure(api_key=GEMINI_API_KEY)
+            model = genai.GenerativeModel(GEMINI_MODEL)
+            response = model.generate_content(prompt)
+            translated = (response.text or "").strip()
+            if translated:
+                return translated
+        except Exception:
+            if attempt < 2:
+                time.sleep(2)
+                continue
+            return text
+        if attempt < 2:
+            time.sleep(2)
+    return text
 
 
 def translate_from_english(text: str, target_lang: str) -> str:

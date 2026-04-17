@@ -167,12 +167,13 @@ class AITextDetector:
         """Initialize lazy-load placeholders for GPT-2 model and tokenizer."""
         self._model: GPT2LMHeadModel | None = None
         self._tokenizer: GPT2Tokenizer | None = None
+        self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def _ensure_loaded(self) -> None:
         """Load GPT-2 model and tokenizer on first use and cache them."""
         if self._model is None or self._tokenizer is None:
             self._tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-            self._model = GPT2LMHeadModel.from_pretrained("gpt2")
+            self._model = GPT2LMHeadModel.from_pretrained("gpt2").to(self._device)
             self._model.eval()
 
     def compute_perplexity(self, text: str) -> float:
@@ -185,6 +186,7 @@ class AITextDetector:
             inputs = self._tokenizer(
                 text, return_tensors="pt", truncation=True, max_length=512
             )
+            inputs = {key: value.to(self._device) for key, value in inputs.items()}
             with torch.no_grad():
                 outputs = self._model(**inputs, labels=inputs["input_ids"])
                 loss = outputs.loss

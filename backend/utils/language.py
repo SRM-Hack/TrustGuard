@@ -6,9 +6,8 @@ from langdetect import detect
 import google.generativeai as genai
 import requests
 
-from config import GEMINI_API_KEY
+from config import GEMINI_API_KEY, SUPPORTED_LANGUAGES
 
-SUPPORTED_LANGUAGES = {"en": "English", "hi": "Hindi", "te": "Telugu", "ta": "Tamil"}
 GEMINI_MODEL = "gemini-2.0-flash-exp"
 REQUESTS_USER_AGENT = requests.utils.default_user_agent()
 

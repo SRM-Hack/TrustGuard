@@ -56,20 +56,3 @@ SERPER_KEY = _get_env_var("SERPER_KEY")
 HF_TOKEN = _get_env_var("HF_TOKEN")
 NEWS_API_KEY = _get_env_var("NEWS_API_KEY")
 FACT_CHECK_KEY = _get_env_var("FACT_CHECK_KEY")
-
-
-def _is_loaded(value: str) -> bool:
-    """Return whether a key is configured without leaking secret values."""
-    return bool(value and value.strip())
-
-
-# Startup diagnostic: show key presence only, never values.
-print(
-    "[TruthGuard Config] API key status: "
-    f"GEMINI_API_KEY={_is_loaded(GEMINI_API_KEY)}, "
-    f"GROQ_API_KEY={_is_loaded(GROQ_API_KEY)}, "
-    f"SERPER_KEY={_is_loaded(SERPER_KEY)}, "
-    f"HF_TOKEN={_is_loaded(HF_TOKEN)}, "
-    f"NEWS_API_KEY={_is_loaded(NEWS_API_KEY)}, "
-    f"FACT_CHECK_KEY={_is_loaded(FACT_CHECK_KEY)}"
-)

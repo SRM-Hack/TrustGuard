@@ -6,6 +6,16 @@ export function saveAnalysisToSession(entry) {
   sessionStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
 }
 
+export function formatModality(modality = "text") {
+  const map = {
+    text: "Text Analysis",
+    image: "Image Analysis",
+    audio: "Audio Analysis",
+    video: "Video Analysis",
+  };
+  return map[modality] || "Content Analysis";
+}
+
 export function normalizeAnalysisResults(payload = {}) {
   return {
     trust_score: payload.trust_score ?? payload.score ?? 0,

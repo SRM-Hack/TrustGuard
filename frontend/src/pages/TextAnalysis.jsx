@@ -7,6 +7,7 @@ import ExplanationPanel from "../components/ExplanationPanel";
 import FileUpload from "../components/FileUpload";
 import LanguageSelector from "../components/LanguageSelector";
 import LoadingOverlay from "../components/LoadingOverlay";
+import SuspiciousSentences from "../components/SuspiciousSentences";
 import TrustScoreGauge from "../components/TrustScoreGauge";
 import { analyzeText } from "../api/truthguard";
 import { SAMPLE_TEXTS } from "../constants";
@@ -15,6 +16,7 @@ import {
   normalizeAnalysisResults,
   saveAnalysisToSession,
 } from "../utils/analysisSession";
+import { downloadReport, generateShareLink, generateSummary } from "../utils/reportGenerator";
 
 async function readTextFile(file) {
   return file.text();
@@ -84,17 +86,54 @@ function TextAnalysis() {
 
   const onCopySummary = async () => {
     if (!results) return;
-    const summary = `TruthGuard Analysis Result
-Trust Score: ${results?.trust_score ?? 0}/100
-Verdict: ${results?.verdict ?? "SUSPICIOUS"}
-Flags: ${results?.flags?.join(", ") || "None"}`;
+    const summary = generateSummary({
+      modality: "text",
+      score: results.trust_score,
+      verdict: results.verdict,
+      emoji: verdictStyle.emoji,
+      language: results.language || selectedLanguage,
+      flags: results.flags,
+    });
 
     try {
       await navigator.clipboard.writeText(summary);
-      toast.success("Summary copied to clipboard!");
+      toast.success("Analysis summary copied to clipboard!");
     } catch (err) {
       toast.error("Unable to copy summary.");
     }
+  };
+
+  const onShareLink = async () => {
+    if (!results) return;
+    const shareUrl = generateShareLink({
+      modality: "text",
+      score: results.trust_score,
+      verdict: results.verdict,
+      language: results.language || selectedLanguage,
+      flags: results.flags,
+    });
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Share link copied to clipboard!");
+    } catch (err) {
+      toast.error("Unable to copy share link.");
+    }
+  };
+
+  const onDownloadReport = () => {
+    if (!results) return;
+    downloadReport({
+      modality: "text",
+      score: results.trust_score,
+      verdict: results.verdict,
+      emoji: verdictStyle.emoji,
+      language: results.language || selectedLanguage,
+      flags: results.flags,
+      explanation: results.countermeasure?.explanation,
+      sources: results.alternative_sources,
+    });
+    toast.success("Downloading analysis report...");
   };
 
   const onNewAnalysis = () => {
@@ -208,6 +247,12 @@ Flags: ${results?.flags?.join(", ") || "None"}`;
               <button type="button" onClick={onCopySummary} className="btn-secondary">
                 📋 Copy Summary
               </button>
+              <button type="button" onClick={onShareLink} className="btn-secondary">
+                🔗 Share Link
+              </button>
+              <button type="button" onClick={onDownloadReport} className="btn-secondary">
+                ⬇️ Download Report
+              </button>
               <button type="button" onClick={onNewAnalysis} className="btn-secondary">
                 ↩ New Analysis
               </button>
@@ -230,6 +275,10 @@ Flags: ${results?.flags?.join(", ") || "None"}`;
                   <DetectionResults
                     detection={results?.detection ?? {}}
                     modality="text"
+                  />
+                  <SuspiciousSentences
+                    sentences={results?.detection?.suspicious_sentences ?? []}
+                    isLoading={isLoading}
                   />
                 </div>
                 <div className="space-y-6 xl:col-span-3">

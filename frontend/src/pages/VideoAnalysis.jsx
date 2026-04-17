@@ -7,26 +7,29 @@ import ExplanationPanel from "../components/ExplanationPanel";
 import FileUpload from "../components/FileUpload";
 import LoadingOverlay from "../components/LoadingOverlay";
 import TrustScoreGauge from "../components/TrustScoreGauge";
+import VideoPipeline from "../components/VideoPipeline";
 import { analyzeVideo } from "../api/truthguard";
 import {
   getVerdictPresentation,
   normalizeAnalysisResults,
   saveAnalysisToSession,
 } from "../utils/analysisSession";
+import { downloadReport, generateShareLink, generateSummary } from "../utils/reportGenerator";
 
-const pipelineSteps = [
-  { id: "frames", label: "Frame Extraction", icon: "📷" },
-  { id: "deepfake", label: "Deepfake Detection", icon: "🔍" },
-  { id: "audio", label: "Audio Analysis", icon: "🎙️" },
+const LOADING_STAGES = [
+  "Extracting key frames for visual analysis...",
+  "Running deepfake detection on extracted frames...",
+  "Analyzing audio track for voice manipulation...",
+  "Calculating final multi-modal trust score...",
 ];
 
 function VideoAnalysis() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [currentStage, setCurrentStage] = useState(0);
+  const [loadingStageIdx, setLoadingStageIdx] = useState(0);
   const resultsRef = useRef(null);
 
   useEffect(() => {
@@ -34,20 +37,26 @@ function VideoAnalysis() {
       setPreviewUrl(null);
       return undefined;
     }
-    const objectUrl = URL.createObjectURL(selectedFile);
-    setPreviewUrl(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
+    const url = URL.createObjectURL(selectedFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
   }, [selectedFile]);
 
   useEffect(() => {
-    if (!isLoading) return undefined;
-    setCurrentStage(0);
-    const timers = [
-      setTimeout(() => setCurrentStage(1), 1400),
-      setTimeout(() => setCurrentStage(2), 2800),
-    ];
-    return () => timers.forEach((timer) => clearTimeout(timer));
+    let interval;
+    if (isLoading) {
+      setLoadingStageIdx(0);
+      interval = setInterval(() => {
+        setLoadingStageIdx((prev) => (prev + 1) % LOADING_STAGES.length);
+      }, 15000);
+    }
+    return () => clearInterval(interval);
   }, [isLoading]);
+
+  const verdictStyle = useMemo(
+    () => getVerdictPresentation(results?.verdict),
+    [results?.verdict]
+  );
 
   const onAnalyze = async () => {
     if (!selectedFile) {
@@ -57,18 +66,10 @@ function VideoAnalysis() {
 
     try {
       setIsLoading(true);
-      setError(null);
-      const response = await analyzeVideo(selectedFile);
-      const normalized = normalizeAnalysisResults(response);
+      setError("");
+      const payload = await analyzeVideo(selectedFile);
+      const normalized = normalizeAnalysisResults(payload);
       setResults(normalized);
-      setTimeout(
-        () =>
-          resultsRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          }),
-        100
-      );
 
       saveAnalysisToSession({
         id: `${Date.now()}-video`,
@@ -76,12 +77,16 @@ function VideoAnalysis() {
         modality: "video",
         trust_score: normalized.trust_score,
         verdict: normalized.verdict,
-        language: normalized.language,
+        language: normalized.language || "en",
         results: normalized,
       });
+
       toast.success("Video analysis completed.");
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     } catch (err) {
-      const message = err?.message || "Unable to analyze this video right now.";
+      const message = err?.message || "Unable to analyze video right now.";
       setError(message);
       toast.error(message);
     } finally {
@@ -89,186 +94,232 @@ function VideoAnalysis() {
     }
   };
 
-  const verdictStyle = useMemo(
-    () => getVerdictPresentation(results?.verdict),
-    [results?.verdict]
-  );
-
-  const handleShareResults = async () => {
+  const onCopySummary = async () => {
     if (!results) return;
-    const summary = `TruthGuard Analysis Result
-Modality: video
-Trust Score: ${results?.trust_score ?? 0}/100
-Verdict: ${results?.verdict ?? "SUSPICIOUS"}`;
+    const summary = generateSummary({
+      modality: "video",
+      score: results.trust_score,
+      verdict: results.verdict,
+      emoji: verdictStyle.emoji,
+      language: results.language || "en",
+      flags: results.flags,
+    });
+
     try {
       await navigator.clipboard.writeText(summary);
-      toast.success("Copied!");
+      toast.success("Analysis summary copied to clipboard!");
     } catch (err) {
-      toast.error("Unable to copy.");
+      toast.error("Unable to copy summary.");
     }
+  };
+
+  const onShareLink = async () => {
+    if (!results) return;
+    const shareUrl = generateShareLink({
+      modality: "video",
+      score: results.trust_score,
+      verdict: results.verdict,
+      language: results.language || "en",
+      flags: results.flags,
+    });
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Share link copied to clipboard!");
+    } catch (err) {
+      toast.error("Unable to copy share link.");
+    }
+  };
+
+  const onDownloadReport = () => {
+    if (!results) return;
+    downloadReport({
+      modality: "video",
+      score: results.trust_score,
+      verdict: results.verdict,
+      emoji: verdictStyle.emoji,
+      language: results.language || "en",
+      flags: results.flags,
+      explanation: results.countermeasure?.explanation,
+      sources: results.alternative_sources,
+    });
+    toast.success("Downloading analysis report...");
   };
 
   const handleNewAnalysis = () => {
     setResults(null);
     setSelectedFile(null);
-    setError(null);
+    setError("");
     setPreviewUrl(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
-    <div className="space-y-6">
-      <section className="trust-card p-6">
-        <h2 className="text-2xl font-semibold text-gray-900">🎬 Video Analysis</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Detect deepfake videos by analyzing frames and audio track.
-        </p>
-
-        <div className="mt-5">
-          <FileUpload
-            accept="video/mp4,video/quicktime,video/avi,video/x-msvideo"
-            maxSizeMB={100}
-            onFileSelected={setSelectedFile}
-            label="Upload Video"
-            icon="🎬"
-          />
+    <div className="space-y-10 animate-fade-in pb-20">
+      {/* HEADER SECTION */}
+      <section className="trust-card p-8 sm:p-10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
+          <span className="text-8xl">🎬</span>
         </div>
 
-        {previewUrl && (
-          <div className="mt-4">
-            <video
-              src={previewUrl}
-              controls
-              muted
-              className="max-h-48 w-full rounded-xl border border-gray-200 bg-black"
-            />
+        <div className="relative z-10 space-y-6">
+          <div className="space-y-2">
+            <h2 className="font-display font-black text-3xl text-gray-900 tracking-tight">
+              Video Analysis
+            </h2>
+            <p className="text-gray-500 font-medium max-w-2xl leading-relaxed">
+              Frame-level deepfake detection + audio analysis in one professional workflow.
+            </p>
           </div>
-        )}
 
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-center">
-          {[
-            { icon: "📷", label: "Frame Extraction" },
-            { icon: "🔍", label: "Deepfake Detection" },
-            { icon: "🎙️", label: "Audio Analysis" },
-          ].map((step, idx) => (
-            <div key={step.label} className="flex items-center gap-2">
-              <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-700">
-                {step.icon} {step.label}
-              </div>
-              {idx < 2 && <span className="hidden text-gray-300 sm:block">→</span>}
-            </div>
-          ))}
-        </div>
+          <div className="glass-blue !bg-orange-500/10 border border-orange-500/20 p-5 rounded-2xl flex items-start gap-4 animate-fade-in-up">
+            <div className="text-orange-600 text-xl pt-0.5">⏱️</div>
+            <p className="text-sm text-orange-800 font-medium leading-relaxed">
+              Video processing analyzes up to <span className="font-bold">10 frames + the full audio track</span>. Large files may take 2–3 minutes to complete.
+            </p>
+          </div>
 
-        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
-          ⏱️ Video analysis processes up to 10 frames + audio track. Large files
-          may take 2–3 minutes.
-        </div>
+          {/* UPLOAD AREA */}
+          <div className="grid gap-8 lg:grid-cols-2 pt-4">
+            <div className="space-y-6">
+              <FileUpload
+                accept="video/mp4,video/quicktime,video/avi"
+                maxSizeMB={100}
+                onFileSelected={setSelectedFile}
+                label="Source Video"
+                icon="🎬"
+              />
 
-        <button
-          type="button"
-          onClick={onAnalyze}
-          disabled={isLoading || !selectedFile}
-          className="btn-primary mt-5"
-        >
-          {isLoading ? "Analyzing..." : "Analyze Video →"}
-        </button>
-
-        {error && (
-          <p className="mt-3 text-sm font-medium text-red-600">{error}</p>
-        )}
-      </section>
-
-      <section className="trust-card p-5">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-          How It Works
-        </h3>
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm sm:gap-4">
-          {pipelineSteps.map((step, index) => {
-            const isActive = isLoading && currentStage === index;
-            const isCompleted = isLoading && currentStage > index;
-            return (
-              <div key={step.id} className="flex items-center gap-2">
-                <div
-                  className={`rounded-lg px-3 py-2 ${
-                    isActive
-                      ? "bg-blue-100 text-blue-700 ring-2 ring-blue-300"
-                      : isCompleted
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-700"
-                  }`}
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={onAnalyze}
+                  disabled={isLoading || !selectedFile}
+                  className="btn-primary flex-1 h-12 text-base group"
                 >
-                  {step.icon} {step.label}
-                </div>
-                {index < pipelineSteps.length - 1 && (
-                  <span className="text-gray-400">→</span>
+                  {isLoading ? "Processing Video..." : "Analyze Video"}
+                  <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                </button>
+                
+                {results && !isLoading && (
+                  <div className="flex flex-wrap gap-3 pt-4">
+                    <button onClick={onCopySummary} className="btn-secondary h-12 px-6">
+                      📋 Copy Summary
+                    </button>
+                    <button onClick={onShareLink} className="btn-secondary h-12 px-6">
+                      🔗 Share Link
+                    </button>
+                    <button onClick={onDownloadReport} className="btn-secondary h-12 px-6">
+                      ⬇️ Download Report
+                    </button>
+                    <button onClick={handleNewAnalysis} className="btn-secondary h-12 px-6 text-red-600 hover:text-red-700">
+                      Reset
+                    </button>
+                  </div>
                 )}
               </div>
-            );
-          })}
+            </div>
+
+            {/* PREVIEW AREA */}
+            <div className="relative">
+              {previewUrl ? (
+                <div className="relative rounded-[2rem] overflow-hidden shadow-2xl animate-fade-in-up border-4 border-white bg-black aspect-video flex items-center justify-center">
+                  <video
+                    src={previewUrl}
+                    controls
+                    muted
+                    preload="metadata"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="h-full min-h-[240px] rounded-[2rem] border-2 border-dashed border-gray-200 bg-gray-50/50 flex flex-col items-center justify-center text-gray-400 gap-3">
+                  <span className="text-5xl grayscale opacity-30">🎬</span>
+                  <p className="text-xs font-bold uppercase tracking-widest">No Video Selected</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <VideoPipeline activeStage={loadingStageIdx} isComplete={!!results} />
         </div>
       </section>
 
+      {/* RESULTS SECTION */}
       {(results || isLoading) && (
-        <section ref={resultsRef} className="space-y-4">
-          {results && (
-            <div className="mt-2 flex flex-wrap gap-3">
-              <button onClick={handleShareResults} className="btn-secondary" type="button">
-                📋 Copy Summary
-              </button>
-              <button onClick={handleNewAnalysis} className="btn-secondary" type="button">
-                ↩ New Analysis
-              </button>
-            </div>
-          )}
+        <section ref={resultsRef} className="relative pt-4">
+          <LoadingOverlay isLoading={isLoading} messages={LOADING_STAGES} />
+          
+          <ErrorBoundary>
+            <div className="grid grid-cols-1 gap-8 xl:grid-cols-5 animate-fade-in-up">
+              {/* LEFT COLUMN */}
+              <div className="space-y-8 xl:col-span-2">
+                <TrustScoreGauge
+                  score={results?.trust_score ?? 0}
+                  verdict={results?.verdict ?? "SUSPICIOUS"}
+                  verdictColor={verdictStyle.color}
+                  verdictEmoji={verdictStyle.emoji}
+                  flags={results?.flags ?? []}
+                  isLoading={isLoading}
+                />
+                
+                <DetectionResults
+                  detection={results?.detection ?? {}}
+                  modality="video"
+                />
 
-          <div className="relative">
-            <LoadingOverlay isLoading={isLoading} />
-            <ErrorBoundary>
-              <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
-                <div className="space-y-6 xl:col-span-2">
-                  <TrustScoreGauge
-                    score={results?.trust_score ?? 0}
-                    verdict={results?.verdict ?? "SUSPICIOUS"}
-                    verdictColor={verdictStyle.color}
-                    verdictEmoji={verdictStyle.emoji}
-                    flags={results?.flags ?? []}
-                    isLoading={isLoading}
-                  />
-
-                  <DetectionResults
-                    detection={results?.detection ?? {}}
-                    modality="video"
-                  />
-
-                  {results?.detection?.audio?.transcript && (
-                    <div className="rounded-xl bg-white p-6 shadow-sm">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        📝 Extracted Transcript
-                      </h3>
-                      <p className="mt-3 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg bg-gray-50 p-4 text-sm text-gray-700">
-                        {results.detection.audio.transcript}
-                      </p>
+                {results?.detection?.video?.audio_analysis?.transcript && (
+                  <div className="trust-card space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">📝</span>
+                        <h3 className="font-display font-bold text-gray-900">Extracted Audio Transcript</h3>
+                      </div>
+                      <span className="badge-blue !text-[10px] uppercase font-black">
+                        {results?.language?.toUpperCase() || "EN"}
+                      </span>
                     </div>
-                  )}
-                </div>
-
-                <div className="space-y-6 xl:col-span-3">
-                  <ExplanationPanel
-                    countermeasure={results?.countermeasure}
-                    language={results?.language ?? "en"}
-                    isLoading={isLoading}
-                  />
-
-                  <AlternativeSources
-                    sources={results?.alternative_sources ?? []}
-                    isLoading={isLoading}
-                  />
-                </div>
+                    <div className="rounded-xl bg-gray-950/5 border border-gray-200/50 p-5 text-sm font-mono text-gray-700 leading-relaxed max-h-40 overflow-y-auto custom-scrollbar">
+                      {results.detection.video.audio_analysis.transcript}
+                    </div>
+                  </div>
+                )}
               </div>
-            </ErrorBoundary>
-          </div>
+
+              {/* RIGHT COLUMN */}
+              <div className="space-y-8 xl:col-span-3">
+                <ExplanationPanel
+                  countermeasure={results?.countermeasure}
+                  language={results?.language ?? "en"}
+                  isLoading={isLoading}
+                />
+                
+                <AlternativeSources
+                  sources={results?.alternative_sources ?? []}
+                  isLoading={isLoading}
+                />
+              </div>
+            </div>
+          </ErrorBoundary>
         </section>
       )}
+
+      {error && (
+        <div className="trust-card !border-red-200 !bg-red-50/50 p-6 flex items-center gap-4 animate-shake">
+          <div className="h-10 w-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xl shrink-0">⚠️</div>
+          <div>
+            <p className="text-sm font-bold text-red-900 uppercase tracking-tight">Analysis Error</p>
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        </div>
+      )}
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes move-dot {
+          0% { left: 0%; }
+          100% { left: 100%; }
+        }
+      `}} />
     </div>
   );
 }

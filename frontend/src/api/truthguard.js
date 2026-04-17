@@ -16,12 +16,19 @@ function extractErrorMessage(error, fallback) {
   return message;
 }
 
+export function formatFileSize(bytes) {
+  if (!bytes) return "0 KB";
+  const k = 1024;
+  const units = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${units[i]}`;
+}
+
 api.interceptors.request.use(
   (config) => {
     if (process.env.NODE_ENV === "development") {
       const method = (config.method || "get").toUpperCase();
       const url = `${config.baseURL || ""}${config.url || ""}`;
-      // Keep this minimal so debugging is easy without noisy payloads.
       console.log(`[TruthGuard API] ${method} ${url}`);
     }
     return config;
@@ -42,9 +49,6 @@ api.interceptors.response.use(
 
 export function formatProcessingTime(ms) {
   const numericMs = Number(ms) || 0;
-  if (numericMs < 1000) {
-    return `${(numericMs / 1000).toFixed(1)}s`;
-  }
   return `${(numericMs / 1000).toFixed(1)}s`;
 }
 

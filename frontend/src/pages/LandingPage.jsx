@@ -6,19 +6,68 @@ const features = [
     title: "Multimodal Detection",
     description:
       "Analyze text, image, audio, and video misinformation in one professional workflow.",
-    icon: "🛡️",
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    ),
+    color: "blue",
+    gradient: "from-blue-600 to-indigo-600",
   },
   {
     title: "Explainable Verdicts",
     description:
       "Go beyond raw scores with AI explanations, flags, and confidence indicators.",
-    icon: "🧠",
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+      </svg>
+    ),
+    color: "purple",
+    gradient: "from-purple-600 to-indigo-600",
   },
   {
     title: "Verified Alternatives",
     description:
       "Surface credible sources and fact-check context to support better decisions.",
-    icon: "📰",
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+      </svg>
+    ),
+    color: "green",
+    gradient: "from-emerald-600 to-teal-600",
+  },
+];
+
+const modalities = [
+  {
+    title: "Text",
+    description: "Detect AI-generated or manipulated text content.",
+    icon: "📝",
+    color: "green",
+    path: "/analyze/text",
+  },
+  {
+    title: "Image",
+    description: "Identify deepfakes and edited visual misinformation.",
+    icon: "🖼️",
+    color: "blue",
+    path: "/analyze/image",
+  },
+  {
+    title: "Audio",
+    description: "Verify voice clones and manipulated audio tracks.",
+    icon: "🎙️",
+    color: "purple",
+    path: "/analyze/audio",
+  },
+  {
+    title: "Video",
+    description: "Expose high-end video deepfakes and temporal edits.",
+    icon: "🎬",
+    color: "red",
+    path: "/analyze/video",
   },
 ];
 
@@ -26,148 +75,239 @@ function LandingPage() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 shadow-md">
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-          }}
-        />
-
-        <div className="relative z-10 p-10 sm:p-14">
-          <span className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/20 px-3 py-1 text-xs font-semibold text-blue-300">
-            🛡️ TruthGuard · CodeWizards 2.0 · Problem Statement #5
-          </span>
-          <h1 className="mt-4 text-4xl font-bold leading-tight text-white sm:text-5xl font-display">
-            AI that doesn't just detect - it{" "}
-            <span className="text-blue-400">explains &amp; corrects</span>
-          </h1>
-          <p className="mt-4 max-w-xl text-base text-blue-200/80">
-            Multimodal misinformation detection for text, images, audio &amp;
-            video. Supports English, Hindi, and Telugu.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              to={isAuthenticated ? "/analyze/text" : "/login"}
-              className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-400"
-            >
-              {isAuthenticated ? "Open Workspace →" : "Get Started →"}
-            </Link>
-            {!isAuthenticated && (
-              <Link
-                to="/signup"
-                className="rounded-xl border border-white/20 px-6 py-3 text-sm text-white/80 transition hover:bg-white/10"
-              >
-                Create Account
-              </Link>
-            )}
-          </div>
+    <div className="animate-fade-in space-y-12 pb-20">
+      {/* HERO SECTION */}
+      <section className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 px-8 py-20 sm:px-16 sm:py-28 min-h-[600px] flex items-center shadow-2xl">
+        {/* 3D Floating Grid Mesh */}
+        <div className="absolute inset-0 z-0 opacity-[0.06] pointer-events-none overflow-hidden">
+          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.1"/>
+              </pattern>
+            </defs>
+            <rect width="100" height="100" fill="url(#grid)" transform="perspective(100px) rotateX(45deg) scale(2) translateY(-20%)" />
+          </svg>
         </div>
 
-        <div className="absolute right-8 top-1/2 hidden w-64 -translate-y-1/2 xl:block">
-          <div className="relative rounded-2xl border border-white/10 bg-white/10 p-5 text-sm backdrop-blur-sm">
-            <div className="absolute -inset-1 -z-10 rounded-2xl bg-blue-500/10 blur-xl" />
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-white/70">Trust Score</span>
-                <span className="text-lg font-semibold text-green-400 animate-pulse">
-                  73
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-white/70">Verdict</span>
-                <span className="rounded-full bg-green-500/20 px-2 py-0.5 font-semibold text-green-300">
-                  ✅ TRUSTED
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-white/70">Language</span>
-                <span className="font-semibold text-white">Hindi (हिन्दी)</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-white/70">Modules</span>
-                <span className="font-semibold text-white">
-                  Text · Fact Check · LLM
-                </span>
-              </div>
+        {/* Ambient Glow Orbs */}
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/25 blur-[120px] rounded-full animate-blob pointer-events-none" />
+        <div className="absolute top-[10%] right-[-5%] w-[400px] h-[400px] bg-indigo-600/20 blur-[100px] rounded-full animate-blob pointer-events-none animation-delay-2000" />
+        <div className="absolute bottom-[-15%] left-[30%] w-[350px] h-[350px] bg-emerald-600/12 blur-[80px] rounded-full animate-blob pointer-events-none animation-delay-4000" />
+
+        <div className="relative z-10 grid gap-12 xl:grid-cols-2 items-center w-full max-w-7xl mx-auto">
+          {/* Left Column Content */}
+          <div className="space-y-8 max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 backdrop-blur-md px-4 py-1.5 text-xs font-semibold text-blue-300 animate-fade-in-up">
+              🛡️ TruthGuard · AI Against Misinformation
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="trust-card text-center">
-          <p className="text-3xl font-bold text-truthguard-blue font-display">4</p>
-          <p className="mt-1 text-xs text-gray-500">Analysis Modalities</p>
-        </div>
-        <div className="trust-card text-center">
-          <p className="text-3xl font-bold text-truthguard-blue font-display">3</p>
-          <p className="mt-1 text-xs text-gray-500">Languages Supported</p>
-        </div>
-        <div className="trust-card text-center">
-          <p className="text-3xl font-bold text-truthguard-blue font-display">6</p>
-          <p className="mt-1 text-xs text-gray-500">AI Models Used</p>
-        </div>
-        <div className="trust-card text-center">
-          <p className="text-3xl font-bold text-truthguard-blue font-display">
-            100%
-          </p>
-          <p className="mt-1 text-xs text-gray-500">Explainable Results</p>
-        </div>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-3">
-        {features.map((item, index) => (
-          <article key={item.title} className="trust-card-hover space-y-3">
-            <div
-              className={`flex h-12 w-12 items-center justify-center rounded-xl p-3 text-xl ${
-                index === 0
-                  ? "bg-blue-50"
-                  : index === 1
-                    ? "bg-purple-50"
-                    : "bg-green-50"
-              }`}
-            >
-              {item.icon}
-            </div>
-            <h3 className="font-display font-semibold text-gray-900">{item.title}</h3>
-            <p className="text-sm leading-relaxed text-gray-500">
-              {item.description}
+            <h1 className="text-4xl sm:text-6xl font-bold font-display leading-[1.1] text-white animate-fade-in-up animation-delay-200">
+              AI that doesn't just detect — <br />
+              <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-500 bg-clip-text text-transparent">
+                it explains & corrects.
+              </span>
+            </h1>
+            <p className="text-lg sm:text-xl text-blue-200/75 leading-relaxed animate-fade-in-up animation-delay-500">
+              TruthGuard uses advanced deep learning to analyze text, images, audio, and video, providing human-readable insights and verified context.
             </p>
-          </article>
+            <div className="flex flex-wrap gap-4 pt-4 animate-fade-in-up animation-delay-700">
+              <Link to={isAuthenticated ? "/analyze/text" : "/login"} className="btn-primary flex items-center gap-2 group">
+                {isAuthenticated ? "Open Workspace" : "Get Started"}
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </Link>
+              {!isAuthenticated && (
+                <Link to="/signup" className="btn-secondary !bg-transparent !border-white/20 !text-white hover:!bg-white/5">
+                  Learn More
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column Content (Result Card) */}
+          <div className="hidden xl:flex justify-center relative">
+            <div className="absolute inset-0 bg-blue-500/15 blur-[60px] rounded-[3rem] animate-glow-pulse" />
+            
+            {/* Rotating Ring Orbit */}
+            <div className="absolute inset-[-40px] border-[1.5px] border-white/10 rounded-full animate-spin-slow pointer-events-none" />
+            <div className="absolute inset-[-20px] border border-white/5 rounded-full animate-spin-slow pointer-events-none animation-delay-2000" />
+
+            <div className="glass-dark w-[380px] p-8 space-y-6 relative z-20 animate-float-3d shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <span className="text-white/60 text-sm font-medium">Result Overview</span>
+                <span className="badge-blue !bg-blue-500/20 !border-blue-500/30 !text-blue-300">AI Verified</span>
+              </div>
+              
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-white/80">Trust Score</span>
+                  <span className="text-3xl font-bold text-emerald-400 font-display">73</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-white/80">Verdict</span>
+                  <span className="glass-blue px-3 py-1 text-sm font-bold text-emerald-300 border-emerald-500/30">
+                    ✅ TRUSTED
+                  </span>
+                </div>
+                
+                <div className="space-y-2 pt-2">
+                  <div className="flex items-center justify-between text-xs text-white/50">
+                    <span>Language</span>
+                    <span className="text-white/90">हिन्दी (Hindi)</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-white/50">
+                    <span>Modules Used</span>
+                    <span className="text-white/90">Text · Fact Check · LLM</span>
+                  </div>
+                </div>
+
+                <div className="progress-bar-3d">
+                  <div className="progress-bar-3d-fill w-[73%] text-emerald-500" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* STATS ROW */}
+      <section className="grid grid-cols-2 gap-6 sm:grid-cols-4 px-4">
+        {[
+          { icon: (
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          ), value: "4", label: "Analysis Modalities", color: "border-blue-500" },
+          { icon: (
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+            </svg>
+          ), value: "3", label: "Languages Supported", color: "border-indigo-500" },
+          { icon: (
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          ), value: "6", label: "AI Models Used", color: "border-purple-500" },
+          { icon: (
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          ), value: "100%", label: "Explainable Results", color: "border-emerald-500" },
+        ].map((stat, idx) => (
+          <div key={idx} className={`trust-card text-center border-b-4 ${stat.color} animate-fade-in-up`} style={{ animationDelay: `${idx * 150}ms` }}>
+            <div className="flex justify-center mb-3 text-blue-600/60">{stat.icon}</div>
+            <p className="text-4xl font-bold text-truthguard-blue font-display">{stat.value}</p>
+            <p className="mt-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">{stat.label}</p>
+          </div>
         ))}
       </section>
 
-      <section className="trust-card mt-6">
-        <h2 className="font-display text-gray-900 font-semibold">
-          How TruthGuard Works
-        </h2>
-        <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          {[
-            { n: "1", icon: "📥", label: "Input Content" },
-            { n: "2", icon: "🔍", label: "AI Detection" },
-            { n: "3", icon: "✅", label: "Fact Verification" },
-            { n: "4", icon: "💡", label: "Explanation + Alternatives" },
-          ].map((step, idx) => (
-            <div key={step.n} className="flex items-center gap-3 md:flex-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
-                {step.n}
+      {/* FEATURES SECTION */}
+      <section className="px-4">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold font-display text-gray-900">Advanced Detection Features</h2>
+          <p className="text-gray-500 mt-2">Powered by state-of-the-art transformer models</p>
+        </div>
+        <div className="grid gap-8 md:grid-cols-3">
+          {features.map((item, index) => (
+            <article key={item.title} className={`trust-card-hover space-y-5 border-l-4 ${item.color === 'blue' ? 'border-blue-500' : item.color === 'purple' ? 'border-purple-500' : 'border-emerald-500'} group`}>
+              <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${item.gradient} shadow-lg shadow-blue-200 transition-transform group-hover:scale-110`}>
+                {item.icon}
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-800">
-                  {step.icon} {step.label}
+              <div className="space-y-2">
+                <h3 className="font-display font-bold text-xl text-gray-900">{item.title}</h3>
+                <p className="text-sm leading-relaxed text-gray-500">
+                  {item.description}
                 </p>
               </div>
-              {idx < 3 && (
-                <div className="ml-2 hidden h-px flex-1 border-t border-dashed border-gray-300 md:block" />
-              )}
-            </div>
+            </article>
           ))}
         </div>
       </section>
+
+      {/* HOW IT WORKS SECTION */}
+      <section className="px-4 max-w-6xl mx-auto">
+        <div className="trust-card !p-12 overflow-hidden relative">
+          <div className="relative z-10 text-center mb-12">
+            <h2 className="text-2xl font-bold font-display text-gray-900">The TruthGuard Pipeline</h2>
+            <p className="text-gray-500 mt-1">Four steps to full verification</p>
+          </div>
+
+          <div className="relative flex flex-col gap-12 md:flex-row md:items-start md:justify-between px-4">
+            {/* Animated Connector Line */}
+            <div className="absolute top-[40px] left-0 w-full hidden md:block px-24">
+              <svg className="w-full h-2" fill="none">
+                <line x1="0" y1="1" x2="100%" y2="1" stroke="currentColor" strokeWidth="2" strokeDasharray="6 6" className="text-blue-200" />
+                <circle r="4" fill="#2563EB" className="animate-[move-dot_4s_linear_infinite]" />
+              </svg>
+            </div>
+
+            {[
+              { n: "1", icon: "📥", label: "Input Content", desc: "Upload URL or File" },
+              { n: "2", icon: "🔍", label: "AI Detection", desc: "Feature Extraction" },
+              { n: "3", icon: "✅", label: "Fact Verification", desc: "Cross-Reference" },
+              { n: "4", icon: "💡", label: "Explanations", desc: "Human Insights" },
+            ].map((step, idx) => (
+              <div key={step.n} className="flex flex-col items-center text-center gap-4 relative z-10 md:flex-1">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-2xl shadow-xl shadow-blue-200 border-4 border-white">
+                  <span className="absolute -top-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-bold text-blue-600 shadow-md">
+                    {step.n}
+                  </span>
+                  {step.icon}
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900">{step.label}</p>
+                  <p className="text-xs text-gray-500 mt-1">{step.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* MODALITIES SECTION (NEW) */}
+      <section className="px-4 pb-12">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl font-bold font-display text-gray-900">Specialized Modalities</h2>
+          <p className="text-gray-500 mt-2">Tailored analysis for every content type</p>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
+          {modalities.map((mod) => (
+            <Link 
+              key={mod.path} 
+              to={mod.path}
+              className={`glass-dark p-8 group border-transparent hover:border-truthguard-${mod.color} transition-all duration-300 transform hover:-translate-y-2 relative overflow-hidden`}
+            >
+              <div className={`absolute top-0 right-0 p-4 opacity-10 text-6xl group-hover:scale-125 transition-transform`}>
+                {mod.icon}
+              </div>
+              <div className="relative z-10 space-y-4">
+                <span className="text-3xl">{mod.icon}</span>
+                <h3 className="text-xl font-bold text-white font-display">{mod.title}</h3>
+                <p className="text-sm text-white/60 leading-relaxed">
+                  {mod.description}
+                </p>
+                <div className="pt-2">
+                  <span className={`text-xs font-bold text-truthguard-${mod.color} uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity`}>
+                    Analyze Now →
+                  </span>
+                </div>
+              </div>
+              <div className={`absolute bottom-0 left-0 h-1 w-0 bg-truthguard-${mod.color} group-hover:w-full transition-all duration-500 shadow-[0_0_15px_rgba(var(--color-rgb),0.5)]`} />
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes move-dot {
+          0% { offset-distance: 0%; }
+          100% { offset-distance: 100%; }
+        }
+        svg circle {
+          offset-path: path('M 0 1 L 1000 1');
+        }
+      `}} />
     </div>
   );
 }
